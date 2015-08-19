@@ -4,6 +4,16 @@
 	var PIXI = window.PIXI;
 
 
+/*           *\
+    #### 
+  ########
+ #######+++
+ #####+++++++
+  ###+++++++++
+    ##+++++++
+        +++ 
+\*           */
+
 
 	var SMOOTH_TELEPORT = true;
 
@@ -30,7 +40,39 @@
 	    this.world = world;
 
 
+	    /*this.physicsRenderer = Physics.renderer('canvas');
+	    var view = this;
+	    this.physicsRenderer.render = function(bodies, meta) {
+			this._world.emit('beforeRender', {
+			    renderer: this,
+			    bodies: bodies,
+			    meta: meta
+			});
+
+			if (this.options.meta) {
+			    this.drawMeta( meta );
+			}
+			
+			view.update(bodies, meta);
+	    };*/
+
+
 	    // Events
+	    this.initEvents();
+
+
+	    // Camera offset
+	    this.offset ={
+	    	x: 0,
+	    	y: 0
+	    };
+
+
+	    this.run = false;
+	};
+
+	View.prototype.initEvents = function() {
+
 	    this.events = {
 	    	mouseleftdown : [],
 	    	mousemiddledown : [],
@@ -73,15 +115,6 @@
 	    	view.renderer.resize(window.innerWidth, window.innerHeight);
 	    };
 
-
-	    // Camera offset
-	    this.offset ={
-	    	x: 0,
-	    	y: 0
-	    };
-
-
-	    this.run = false;
 	};
 
 	/**
@@ -100,6 +133,11 @@
 		// Rebuild
 		this.stage.addChild(this.graphics);
 		this.world = world;
+		this.world.physicsWorld.add(this.physicsRenderer);
+		var view = this;
+		this.world.physicsWorld.on('step', function() {
+			view.update();
+		});
 	}
 
 	/**
@@ -108,11 +146,10 @@
 	 */
 	View.prototype.startRender = function() {
 		if (!this.world) {
-			console.warn("[View] Can't start rendering : No world attached.")
+			console.warn("[View] Can't start rendering : No world attached.");
 		}
 		else if (!this.run) {
 			this.run = true;
-			this.update();
 		}
 	};
 
@@ -128,38 +165,123 @@
 	 * update()
 	 * The loop used to render
 	 */
-	View.prototype.update = function() {
+	View.prototype.update = function(bodies, meta) {
 		if (this.run) {
-			var that = this;
-			requestAnimationFrame(function(){that.update()});
 
 			this.graphics.clear();
 
+			var entity;
 			var pos;
+			var progressSinus;
+			var angleDelta;
+			var positionDelta;
+			var s;
+			var entityST;
+
+			// For each entities
 			for (var idE in this.world.entities) {
-				var entity = this.world.entities[idE];
+				entity = this.world.entities[idE];
+				b = entity.physicsBody;
+
+				// Calc Smooth Teleport position modificator
+				entityST = false;
+				angleDelta = 0;
+				positionDelta = {x: 0, y: 0};
+				if (this.world.entities[idE].smoothTeleport.progress < 1 && SMOOTH_TELEPORT) {
+					entityST = true;
+					this.world.entities[idE].smoothTeleport.progress += 0.05;
+					progressSinus = (Math.sin(this.world.entities[idE].smoothTeleport.progress * Math.PI + Math.PI/2) + 1) / 2; // Inversed (1 -> 0)
+					angleDelta = this.world.entities[idE].smoothTeleport.angleDelta * progressSinus;
+					positionDelta = {
+						x: this.world.entities[idE].smoothTeleport.positionDelta.x * progressSinus,
+						y: this.world.entities[idE].smoothTeleport.positionDelta.y * progressSinus
+					};
+				}
 
 				// No texture
 				if (!entity.texture) {
-					var v = this.world.entities[idE].matterBody.vertices;
 
 					this.graphics.lineStyle(2, 0xDDEEFF);
 					this.graphics.beginFill(0xDDEEFF, 0);
 
-					// Smooth Teleport
-					if (this.world.entities[idE].smoothTeleport.progress < 1 && SMOOTH_TELEPORT) {
-						this.world.entities[idE].smoothTeleport.progress += 0.05;
-						var progressSinus = (Math.sin(this.world.entities[idE].smoothTeleport.progress * Math.PI + Math.PI/2) + 1) / 2; // Inversed
-						var angleDelta = this.world.entities[idE].smoothTeleport.angleDelta * progressSinus;
-						var positionDelta = {
-							x: this.world.entities[idE].smoothTeleport.positionDelta.x * progressSinus,
-							y: this.world.entities[idE].smoothTeleport.positionDelta.y * progressSinus
-						};
+					if (entity.type == 'Rectangle') {
 
+						pos = [
+							this.addOffset(rotatePoint(
+								b.state.pos.x - b.width / 2, b.state.pos.y - b.height / 2,
+								b.state.angular.pos + angleDelta,
+								b.state.pos.x, b.state.pos.y
+							)),
+							this.addOffset(rotatePoint(
+								b.state.pos.x + b.width / 2, b.state.pos.y - b.height / 2,
+								b.state.angular.pos + angleDelta,
+								b.state.pos.x, b.state.pos.y
+							)),
+							this.addOffset(rotatePoint(
+								b.state.pos.x + b.width / 2, b.state.pos.y + b.height / 2,
+								b.state.angular.pos + angleDelta,
+								b.state.pos.x, b.state.pos.y
+							)),
+							this.addOffset(rotatePoint(
+								b.state.pos.x - b.width / 2, b.state.pos.y + b.height / 2,
+								b.state.angular.pos + angleDelta,
+								b.state.pos.x, b.state.pos.y
+							)),
+						];
+
+						this.graphics.moveTo(pos[0].x + positionDelta.x, pos[0].y + positionDelta.y);
+						for (var i = 1 ; i < 4 ; i++) {
+							this.graphics.lineTo(pos[i].x + positionDelta.x, pos[i].y + positionDelta.y);
+						}
+
+					}
+
+					else if (entity.type == 'Circle') {
+
+						pos = this.addOffset({x: b.state.pos.x, y: b.state.pos.y});
+						this.graphics.drawCircle(pos.x + positionDelta.x, pos.y + positionDelta.y, entity.radius);
+
+					}
+
+					else if (entity.type == 'Polygon') {
+
+						if (b.geometry.vertices[0]) {
+							pos = this.addOffset(rotatePoint(
+								b.geometry.vertices[0].x, b.geometry.vertices[0].y,
+								angleDelta,
+								b.state.pos.x, b.state.pos.y
+							));
+							this.graphics.moveTo(pos.x + positionDelta.x, pos.y + positionDelta.y);
+
+							for (var i = 1 ; i < b.geometry.vertices.length ; i++) {
+								pos = this.addOffset(rotatePoint(
+									b.geometry.vertices[i].x, b.geometry.vertices[i].y,
+									angleDelta,
+									b.state.pos.x, b.state.pos.y
+								));
+								this.graphics.lineTo(pos.x + positionDelta.x, pos.y + positionDelta.y);								
+							}
+						}
+
+					}
+
+					this.graphics.endFill();
+
+					// alias vertices
+					/*v = this.world.entities[idE].matterBody.vertices;
+
+					// Draw style (currently default)
+					this.graphics.lineStyle(2, 0xDDEEFF);
+					this.graphics.beginFill(0xDDEEFF, 0);
+
+					// Smooth Teleport
+					if (entityST) {
+						// Independant first point due to "moveTo"
 						if (v[0]) {
 							pos = this.addOffset(rotatePoint(v[0].x, v[0].y, angleDelta, entity.matterBody.position.x, entity.matterBody.position.y));
 							this.graphics.moveTo(pos.x + positionDelta.x, pos.y + positionDelta.y);
 						}
+						// All other points
 						for (var i = 1 ; i < v.length ; i++) {
 							pos = this.addOffset(rotatePoint(v[i].x, v[i].y, angleDelta, entity.matterBody.position.x, entity.matterBody.position.y));
 							this.graphics.lineTo(pos.x + positionDelta.x, pos.y + positionDelta.y);
@@ -177,48 +299,24 @@
 							this.graphics.lineTo(pos.x, pos.y);
 						}
 					}
-					this.graphics.endFill();
+					this.graphics.endFill();*/
 				}
 
 				// Texture
 				else {
 
-					// Init Sprite and Txture
+					// Init Sprite and Texture
 					if (!this.sprites[entity.id]) {
 						this.newSprite(entity.id, entity.texture);
 						this.sprites[entity.id].scale = entity.textureScale;
 					}
 
-					this.sprites[entity.id].position.x = entity.matterBody.position.x;
-					this.sprites[entity.id].position.y = entity.matterBody.position.y;
 
-					this.sprites[entity.id].rotation = entity.matterBody.angle;
+					pos = this.addOffset({x: entity.physicsBody.state.pos.x, y: entity.physicsBody.state.pos.y});
+					this.sprites[entity.id].position.x = pos.x + positionDelta.x;
+					this.sprites[entity.id].position.y = pos.y + positionDelta.y;
 
-					// Smooth Teleport
-					if (this.world.entities[idE].smoothTeleport.progress < 1 && SMOOTH_TELEPORT) {
-						this.world.entities[idE].smoothTeleport.progress += 0.05;
-						var progressSinus = (Math.sin(this.world.entities[idE].smoothTeleport.progress * Math.PI + Math.PI/2) + 1) / 2; // Inversed (1 -> 0)
-						var angleDelta = this.world.entities[idE].smoothTeleport.angleDelta * progressSinus;
-						var positionDelta = {
-							x: this.world.entities[idE].smoothTeleport.positionDelta.x * progressSinus,
-							y: this.world.entities[idE].smoothTeleport.positionDelta.y * progressSinus
-						};
-
-						pos = this.addOffset({x: entity.matterBody.position.x, y: entity.matterBody.position.y});
-						this.sprites[entity.id].position.x = pos.x + positionDelta.x;
-						this.sprites[entity.id].position.y = pos.y + positionDelta.y;
-
-						this.sprites[entity.id].rotation = entity.matterBody.angle + angleDelta;
-					}
-
-					// Original position
-					else {
-						pos = this.addOffset({x: entity.matterBody.position.x, y: entity.matterBody.position.y});
-						this.sprites[entity.id].position.x = pos.x;
-						this.sprites[entity.id].position.y = pos.y;
-
-						this.sprites[entity.id].rotation = entity.matterBody.angle;
-					}
+					this.sprites[entity.id].rotation = entity.physicsBody.state.angular.pos + angleDelta;
 
 				}
 			}
