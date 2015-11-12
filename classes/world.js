@@ -7,8 +7,8 @@
 	// CommonJS module
 	if (typeof exports !== 'undefined') {
 	    Physics = require("physicsjs-full");
-	    Entity = require("Entity").Entity;
-	    Loader = require("Loader").Loader;
+	    Entity = require("entity").Entity;
+	    Loader = require("loader").Loader;
 	}
 
 	// browser

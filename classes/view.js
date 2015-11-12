@@ -308,34 +308,50 @@
 				}
 			}
 
-			var e, aabb, radius, pos, b, angle;
+			var e, aabb, radius, pos, b, angle, angleDelta, positionDelta, progressSinus;
 			for (var idP in this.players) {
 				if (this.players[idP].delete) {
 					this.stage.removeChild(this.players[idP].text);
 					delete this.players[idP];
 				}
 				else {
-					if (this.players[idP].text == undefined) {
-						this.players[idP].text = new PIXI.Text(this.players[idP].nickname,STYLE_NICKNAME);
-						this.stage.addChild(this.players[idP].text);
+					if (this.world.entities[this.players[idP].entityId]) {
+						if (this.players[idP].text == undefined) {
+							this.players[idP].text = new PIXI.Text(this.players[idP].nickname,STYLE_NICKNAME);
+							this.stage.addChild(this.players[idP].text);
+						}
+						b = this.world.entities[this.players[idP].entityId].physicsBody;
+						e = this.world.entities[this.players[idP].entityId];
+						aabb = b.aabb();
+						radius = Math.sqrt(aabb.hw * aabb.hw + aabb.hh * aabb.hh) / 2;
+
+						angleDelta = 0;
+						positionDelta = {x: 0, y: 0};
+						if (e.smoothTeleport.progress < 1 && SMOOTH_TELEPORT) {
+							e.smoothTeleport.progress += SMOOTH_TELEPORT_SPEED;
+							progressSinus = (Math.sin(e.smoothTeleport.progress * Math.PI + Math.PI/2) + 1) / 2; // Inversed (1 -> 0)
+							e.smoothTeleport.progressSinus = progressSinus;
+							positionDelta = {
+								x: e.smoothTeleport.positionDelta.x * progressSinus,
+								y: e.smoothTeleport.positionDelta.y * progressSinus
+							};
+						}
+
+						angle = toAngleDist({x: b.state.pos.x, y: b.state.pos.y}).angle - Math.PI/2;
+
+						pos = rotatePoint(
+							aabb.x + positionDelta.x + this.players[idP].text.width / 2,
+							aabb.y + positionDelta.y + radius * 1.6 + this.players[idP].text.height,
+							angle,
+							b.state.pos.x + positionDelta.x,
+							b.state.pos.y + positionDelta.y
+						);
+						/*pos.x -= this.players[idP].text.width / 2;
+						pos.y -= this.players[idP].text.height;*/
+						this.players[idP].text.x = pos.x;
+						this.players[idP].text.y = pos.y;
+						this.players[idP].text.rotation = angle + Math.PI;
 					}
-					b = this.world.entities[this.players[idP].entityId].physicsBody;
-					e = this.world.entities[this.players[idP].entityId];
-					aabb = b.aabb();
-					radius = Math.sqrt(aabb.hw * aabb.hw + aabb.hh * aabb.hh) / 2;
-					angle = toAngleDist({x: b.state.pos.x, y: b.state.pos.y}).angle - Math.PI/2;
-					pos = rotatePoint(
-						aabb.x + this.players[idP].text.width / 2,
-						aabb.y + radius * 1.6 + this.players[idP].text.height,
-						angle,
-						b.state.pos.x,
-						b.state.pos.y
-					);
-					/*pos.x -= this.players[idP].text.width / 2;
-					pos.y -= this.players[idP].text.height;*/
-					this.players[idP].text.x = pos.x;
-					this.players[idP].text.y = pos.y;
-					this.players[idP].text.rotation = angle + Math.PI;
 				}
 			}
 
