@@ -14,12 +14,14 @@
 		<script src="./modules/pixi.min.js"></script>
 		<script src="./modules/physicsjs-full.js"></script>
 
-		<script src="./classes/entity.js"></script>
-		<script src="./classes/world.js"></script>
-		<script src="./classes/view.js"></script>
-		<script src="./classes/synchronizer.js"></script>
+		<script src="./js/onload.js"></script>
+		<script src="./js/chatbox.js"></script>
+		<script src="./js/entity.js"></script>
+		<script src="./js/world.js"></script>
+		<script src="./js/view.js"></script>
+		<script src="./js/synchronizer.js"></script>
 		<script src="./index.js"></script>
-		<script src="./classes/performance.js"></script>
+		<script src="./js/performance.js"></script>
 
 		<link rel="stylesheet" href="./index.css"/>
 
@@ -32,6 +34,13 @@
 					<input id="nicknameInput" name="nickname" type="text" maxlength="25"/>
 				</form>
 			</div>
+		</div>
+
+		<div id="chatbox">
+			<div id="chatboxMessages">
+			</div>
+			<span class="preInput">&gt;</span>
+			<input id="chatboxInput" type="text" value="" maxlength="300" />
 		</div>
 	</body>
 </html>

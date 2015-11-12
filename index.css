@@ -55,12 +55,120 @@ body {
 
 
 
+#chatbox {
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 1px;
+    padding: 10px;
+    width: 30%;
+    color: rgba(220,220,220,0.9);
+    font-family: Raleway;
+    font-size: 0.9em;
+    transition-duration: 600ms;
+}
+
+#chatbox.displayMsg[data-focus=true] {
+    background-color: rgba(0,0,0,0.7);
+}
+
+#chatbox.displayMsg {
+    background-color: rgba(0,0,0,0.6);
+    transition-duration: 300ms;
+}
+
+#chatbox .preInput {
+    font-family: Raleway;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+#chatbox input {
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    outline: none;
+    border: none;
+    width: calc(100% - 30px);
+    color: white;
+    font-family: Raleway;
+}
+
+#chatbox #chatboxMessages .message {
+    max-width: 100%;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+#chatbox #chatboxMessages .nickname {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+#chatbox.displayMsg #chatboxMessages {
+    animation-name: messagesDisplay;
+    animation-duration: 300ms;
+    animation-fill-mode: both;
+    -webkit-animation-name: messagesDisplay;
+    -webkit-animation-duration: 300ms;
+    -webkit-animation-fill-mode: both;
+}
+
+#chatbox.hideMsg #chatboxMessages {
+    animation-name: messagesHide;
+    animation-duration: 600ms;
+    animation-fill-mode: both;
+    -webkit-animation-name: messagesHide;
+    -webkit-animation-duration:600ms;
+    -webkit-animation-fill-mode: both;
+}
+
+@keyframes messagesDisplay {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@-webkit-keyframes messagesDisplay {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes messagesHide {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+@-webkit-keyframes messagesHide {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+
+
+
 
 
 
 
 /* FONTS
 ==============================*/
+
+
+/* Caviar Dreams */
 
 @font-face {
     font-family: 'Caviar Dreams';
@@ -96,4 +204,26 @@ body {
          url('./fonts/caviardreams/bolditalic/CaviarDreams_BoldItalic-webfont.woff') format('woff');
     font-weight: bold;
     font-style: italic;
+}
+
+
+
+/* Raleway */
+
+@font-face {
+    font-family: 'Raleway';
+    src: url('./fonts/raleway/regular/raleway-regular-webfont.eot');
+    src: url('./fonts/raleway/regular/raleway-regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/raleway/regular/raleway-regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Raleway';
+    src: url('./fonts/raleway/bold/raleway-bold-webfont.eot');
+    src: url('./fonts/raleway/bold/raleway-bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/raleway/bold/raleway-bold-webfont.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
 }

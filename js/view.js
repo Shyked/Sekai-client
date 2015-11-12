@@ -73,7 +73,8 @@
 		104: "8",
 		105: "9",
 		107: "+",
-		109: "-"
+		109: "-",
+		111: "/"
 	}
 
 	var STYLE_NICKNAME = {
@@ -152,6 +153,7 @@
 	    var view = this;
 	    // Mouse events
 	    this.renderer.view.onmousedown = function(e) {
+	    	if (document.getElementById('chatboxInput')) document.getElementById('chatboxInput').blur();
 	    	if (e.button == 0) view.triggerEvent('mouseleftdown',e);
 	    	else if (e.button == 1) view.triggerEvent('mousemiddledown',e);
 	    	else if (e.button == 2) view.triggerEvent('mouserightdown',e);
@@ -180,7 +182,7 @@
 
 	    this.preventKeyRepeat = {};
 	    window.onkeydown = function(e) {
-	    	if (!view.preventKeyRepeat[e.keyCode]) {
+	    	if (!view.preventKeyRepeat[e.keyCode] && (document.getElementById('chatbox').getAttribute("data-focus") != "true" || KEYS[e.keyCode] == "ENTER")) {
 	    		view.preventKeyRepeat[e.keyCode] = true;
 	    		var key = KEYS[e.keyCode];
 	    		view.triggerEvent('keydown',key);
@@ -189,9 +191,11 @@
 	    this.addEventListener('keydown', view.keyDown);
 
 	    window.onkeyup = function(e) {
-	    	view.preventKeyRepeat[e.keyCode] = false;
-	    	var key = KEYS[e.keyCode];
-	    	view.triggerEvent('keyup',key);
+	    	if (document.getElementById('chatbox').getAttribute("data-focus") != "true" || KEYS[e.keyCode] == "ENTER") {
+		    	view.preventKeyRepeat[e.keyCode] = false;
+		    	var key = KEYS[e.keyCode];
+		    	view.triggerEvent('keyup',key);
+		    }
 	    };
 
 
@@ -310,7 +314,13 @@
 
 			var e, aabb, radius, pos, b, angle, angleDelta, positionDelta, progressSinus;
 			for (var idP in this.players) {
+				if (this.players[idP].prevText) {
+					console.log("Ow, prevText ! (" + idP + ")");
+					this.stage.removeChild(this.players[idP].prevText);
+					delete this.players[idP].prevText;
+				}
 				if (this.players[idP].delete) {
+					console.log("Ow, I need to delete this one ! (" + idP + ")");
 					this.stage.removeChild(this.players[idP].text);
 					delete this.players[idP];
 				}
@@ -337,20 +347,31 @@
 							};
 						}
 
-						angle = toAngleDist({x: b.state.pos.x, y: b.state.pos.y}).angle - Math.PI/2;
+						if (this.world.type == "circular") {
+							angle = toAngleDist({x: b.state.pos.x, y: b.state.pos.y}).angle - Math.PI/2;
 
-						pos = rotatePoint(
-							aabb.x + positionDelta.x + this.players[idP].text.width / 2,
-							aabb.y + positionDelta.y + radius * 1.6 + this.players[idP].text.height,
-							angle,
-							b.state.pos.x + positionDelta.x,
-							b.state.pos.y + positionDelta.y
-						);
+							pos = rotatePoint(
+								aabb.x + positionDelta.x + this.players[idP].text.width / 2,
+								aabb.y + positionDelta.y + radius * 1.6 + this.players[idP].text.height,
+								angle,
+								b.state.pos.x + positionDelta.x,
+								b.state.pos.y + positionDelta.y
+							);
+						}
+						else if (this.world.type == "flat") {
+							pos = {
+								x: aabb.x + positionDelta.x - this.players[idP].text.width / 2,
+								y: aabb.y + positionDelta.y - radius * 1.6 - this.players[idP].text.height
+							}
+						}
 						/*pos.x -= this.players[idP].text.width / 2;
 						pos.y -= this.players[idP].text.height;*/
 						this.players[idP].text.x = pos.x;
 						this.players[idP].text.y = pos.y;
 						this.players[idP].text.rotation = angle + Math.PI;
+					}
+					else {
+						this.stage.removeChild(this.players[idP].text);
 					}
 				}
 			}
@@ -634,10 +655,17 @@
 		var relative = (relative) ? 1 : 0;
 		this.offset.x = this.offset.x * relative + vector.x;
 		this.offset.y = this.offset.y * relative + vector.y;
-		var angleDist = toAngleDist(this.offset);
-		this.stage.position.x = this.renderer.width / 2;
-		this.stage.position.y = (angleDist.dist * this.stage.scale.y + this.renderer.height / 2);
-		this.stage.rotation = - (angleDist.angle + Math.PI/2);
+		if (this.world.type == "circular") {
+			var angleDist = toAngleDist(this.offset);
+			this.stage.position.x = this.renderer.width / 2;
+			this.stage.position.y = (angleDist.dist * this.stage.scale.y + this.renderer.height / 2);
+			this.stage.rotation = - (angleDist.angle + Math.PI/2);
+		}
+		else if (this.world.type == "flat") {
+			this.stage.position.x = -this.offset.x + this.renderer.width / 2;
+			this.stage.position.y = -this.offset.y + this.renderer.height / 2;
+			this.stage.rotation = 0;
+		}
 		/*this.stage.position.x = -this.offset.x + this.renderer.width / 2;
 		this.stage.position.y = -this.offset.y + this.renderer.height / 2;*/
 	};

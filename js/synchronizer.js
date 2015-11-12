@@ -32,6 +32,7 @@
 		this.socket.on('removeEntity',function(content){setTimeout(function(){ that.removeEntity(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('definePlayer',function(content){setTimeout(function(){ that.definePlayer(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('error',function(content){setTimeout(function(){ that.error(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('chatboxMessage',function(content){setTimeout(function(){ that.chatboxMessage(content) },Math.random()*RAND_LAG+LAG)});
 
 
 		// User inputs
@@ -79,11 +80,21 @@
 
 	Synchronizer.prototype.playerJoin = function(content) {
 		var player = JSON.parse(content);
+		var prevText = null;
+		console.log("JOIN ! (" + player.id + ")");
+		if (this.view.players[player.id] && this.view.players[player.id].entityId) {
+			console.log("Saving prevText...");
+			prevText = this.view.players[player.id].text;
+		}
 		this.view.players[player.id] = player;
+		if (prevText != null) {
+			this.view.players[player.id].prevText = prevText;
+		}
 	};
 
 	Synchronizer.prototype.playerLeave = function(content) {
 		var player = JSON.parse(content);
+		console.log("LEAVE ! (" + player.id + ")");
 		//delete this.view.players[player.id];
 		this.view.players[player.id].delete = true;
 	};
@@ -164,6 +175,12 @@
 	Synchronizer.prototype.keyDown = function(key) {
 		if (this.playerId) {
 			if (key == "R") this.socket.emit('restartWorld', "");
+			else if ((key == "ENTER" || key == "/") && document.getElementById('chatboxInput')) {
+				var text = document.getElementById('chatboxInput').enter();
+				if (text) {
+					this.socket.emit('chatboxMessage', JSON.stringify(text));
+				}
+			}
 			else {
 				this.socket.emit('keydown', JSON.stringify({
 					"key": key,
@@ -199,6 +216,18 @@
 		}
 	};
 
+	Synchronizer.prototype.chatboxMessage = function(content) {
+		var messageObject = JSON.parse(content);
+		if (document.getElementById('chatboxMessages')) {
+			document.getElementById('chatboxMessages').addMessage(
+				messageObject.msg,
+				messageObject.nickname,
+				messageObject.color,
+				messageObject.type
+			);
+		}
+	};
+
 
 
 
@@ -207,22 +236,32 @@
 		if (this.playerId) {
 
 			var entity = this.world.entities[this.playerId];
+			var vel;
 
-			var angleDistPos = toAngleDist({
-				x: entity.physicsBody.state.pos.x,
-				y: entity.physicsBody.state.pos.y
-			});
-			var vel = rotatePoint(
-				entity.physicsBody.state.vel.x, entity.physicsBody.state.vel.y,
-				- (angleDistPos.angle + Math.PI/2),
-				0, 0
-			);
-			if (vel.y > -this.playerParams.jumpPower) vel.y = -this.playerParams.jumpPower;
-			vel = rotatePoint(
-				vel.x, vel.y,
-				(angleDistPos.angle + Math.PI/2),
-				0, 0
-			);
+			if (this.world.type == "circular") {
+				var angleDistPos = toAngleDist({
+					x: entity.physicsBody.state.pos.x,
+					y: entity.physicsBody.state.pos.y
+				});
+				vel = rotatePoint(
+					entity.physicsBody.state.vel.x, entity.physicsBody.state.vel.y,
+					- (angleDistPos.angle + Math.PI/2),
+					0, 0
+				);
+				if (vel.y > -this.playerParams.jumpPower) vel.y = -this.playerParams.jumpPower;
+				vel = rotatePoint(
+					vel.x, vel.y,
+					(angleDistPos.angle + Math.PI/2),
+					0, 0
+				);
+			}
+			else if (this.world.type == "flat") {
+				vel = {
+					x: entity.physicsBody.state.vel.x,
+					y: entity.physicsBody.state.vel.y
+				};
+				if (vel.y > -this.playerParams.jumpPower) vel.y = -this.playerParams.jumpPower;
+			}
 			entity.physicsBody.state.vel.x = vel.x;
 			entity.physicsBody.state.vel.y = vel.y;
 
@@ -231,7 +270,6 @@
 	};
 
 	Synchronizer.prototype.roll = function(side) {
-		console.log(this.playerId);
 		if (this.playerId) {
 			var entity = this.world.entities[this.playerId];
 

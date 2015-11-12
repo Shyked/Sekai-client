@@ -74,6 +74,10 @@
 		options.y = y;
 		options.width = width;
 		options.height = height;
+		if (options.angle) {
+			var angle = options.angle;
+			options.angle = undefined;
+		}
 
 		this.physicsBody = Physics.body('rectangle', options);
 
@@ -100,8 +104,14 @@
 		options.x = x;
 		options.y = y;
 		options.radius = radius;
+		if (options.angle) {
+			var angle = options.angle;
+			options.angle = undefined;
+		}
 
 		this.physicsBody = Physics.body('circle', options);
+
+		if (angle) this.physicsBody.state.angular.pos = angle;
 
 		if (state) Entity.copyState(state, this.physicsBody.state);
 
@@ -163,6 +173,10 @@
 		options.x = x;
 		options.y = y;
 		options.children = [];
+		if (options.angle) {
+			var angle = options.angle;
+			options.angle = undefined;
+		}
 
 		this.children = {};
 		this.childrenCount = 0;
@@ -182,6 +196,8 @@
 			x: aabb.x - this.physicsBody.state.pos.x,
 			y: aabb.y - this.physicsBody.state.pos.y,
 		};
+
+		if (angle) this.physicsBody.state.angular.pos = angle;
 
 		if (state) Entity.copyState(state, this.physicsBody.state);
 		
