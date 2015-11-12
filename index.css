@@ -22,6 +22,7 @@ body {
 	left: 0;
     text-align: center;
     background-color: rgba(0,0,0,0.5);
+    z-index: 2;
 }
 
 #nicknameContainer {
@@ -65,8 +66,9 @@ body {
     width: 30%;
     color: rgba(220,220,220,0.9);
     font-family: Raleway;
-    font-size: 0.9em;
+    font-size: 0.95em;
     transition-duration: 600ms;
+    z-index: 1;
 }
 
 #chatbox.displayMsg[data-focus=true] {

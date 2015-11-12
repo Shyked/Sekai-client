@@ -217,6 +217,7 @@
 	};
 
 	Synchronizer.prototype.chatboxMessage = function(content) {
+		console.log("msg");
 		var messageObject = JSON.parse(content);
 		if (document.getElementById('chatboxMessages')) {
 			document.getElementById('chatboxMessages').addMessage(
