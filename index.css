@@ -1,0 +1,99 @@
+body {
+	font-family: Caviar Dreams;
+	color: white;
+    background-color: #000000;
+}
+
+.val {
+    display: inline-block;
+    width: 0px;
+    height: 100%;
+    vertical-align: middle;
+}
+
+#blackContainer {
+	display: none;
+	position: fixed;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+    text-align: center;
+    background-color: rgba(0,0,0,0.5);
+}
+
+#nicknameContainer {
+    width: 50%;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+#nicknameContainer div {
+    font-size: 1.4em;
+    margin-bottom: 0.5em;
+}
+
+#nicknameInput {
+    font-family: Caviar Dreams;
+    font-size: 1.4em;
+    border: 0.1em white solid;
+    background: none;
+    border-radius: 0.2em;
+    color: white;
+    padding: 0.3em 0.5em;
+    text-align: center;
+    font-weight: bold;
+    outline: none;
+}
+
+#nicknameInput:focus {
+    background-color: rgba(255,255,255,0.1);
+}
+
+
+
+
+
+
+
+
+/* FONTS
+==============================*/
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('./fonts/caviardreams/regular/CaviarDreams-webfont.eot');
+    src: url('./fonts/caviardreams/regular/CaviarDreams-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/caviardreams/regular/CaviarDreams-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('./fonts/caviardreams/bold/CaviarDreams_Bold-webfont.eot');
+    src: url('./fonts/caviardreams/bold/CaviarDreams_Bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/caviardreams/bold/CaviarDreams_Bold-webfont.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('./fonts/caviardreams/italic/CaviarDreams_Italic-webfont.eot');
+    src: url('./fonts/caviardreams/italic/CaviarDreams_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/caviardreams/italic/CaviarDreams_Italic-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Caviar Dreams';
+    src: url('./fonts/caviardreams/bolditalic/CaviarDreams_BoldItalic-webfont.eot');
+    src: url('./fonts/caviardreams/bolditalic/CaviarDreams_BoldItalic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('./fonts/caviardreams/bolditalic/CaviarDreams_BoldItalic-webfont.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}

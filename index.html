@@ -1,12 +1,13 @@
 <html>
 	<head>
-		<title>Exercice</title>
+		<title>Sekai</title>
 		<style>
 			html, body {
 				margin: 0;
 				padding: 0;
 			}
 		</style>
+		<meta charset="utf-8"/>
 	</head>
 	<body>
 		<script src="./socket.io-client/socket.io.js"></script>
@@ -19,5 +20,18 @@
 		<script src="./classes/synchronizer.js"></script>
 		<script src="./index.js"></script>
 		<script src="./classes/performance.js"></script>
+
+		<link rel="stylesheet" href="./index.css"/>
+
+
+		<div id="blackContainer">
+			<div class="val"></div>
+			<div id="nicknameContainer">
+				<form action="#" id="nicknameForm">
+					<div>Nickname</div>
+					<input id="nicknameInput" name="nickname" type="text" maxlength="25"/>
+				</form>
+			</div>
+		</div>
 	</body>
 </html>
