@@ -2,8 +2,8 @@
 
 	var Worlds = window.Worlds;
 
-	var LAG = 500;
-	var RAND_LAG = 100;
+	var LAG = 0;
+	var RAND_LAG = 0;
 
 	/**
 	 * Synchronizer
