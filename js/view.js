@@ -22,8 +22,7 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	// var ZOOM_MIN = 0.6;
-	var ZOOM_MIN = 0.05;
+	var ZOOM_MIN = 0.6;
 	var ZOOM_MAX = 1.8;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
@@ -469,6 +468,35 @@
 			};
 		}
 
+
+		// Texture
+		if (entity.texture) {
+
+			// Init Sprite and Texture
+			if (!container.sprites[entity.id]) {
+				this.newSprite(container, entity.id, entity.texture);
+				container.sprites[entity.id].scale = entity.textureScale;
+			}
+
+
+			pos = rotatePoint(
+				b.state.pos.x + entity.textureCenter.x,
+				b.state.pos.y + entity.textureCenter.y,
+				b.state.angular.pos,
+				b.state.pos.x,
+				b.state.pos.y
+			);
+			container.sprites[entity.id].position.x = pos.x + positionDelta.x;
+			container.sprites[entity.id].position.y = pos.y + positionDelta.y;
+
+			container.sprites[entity.id].rotation = b.state.angular.pos + angleDelta;
+
+			if (DEBUG) container.sprites[entity.id].alpha = 0.5;
+			else container.sprites[entity.id].alpha = 1;
+
+		}
+
+
 		pos = rotatePoint(
 			b.state.pos.x - entity.com.x,
 			b.state.pos.y - entity.com.y,
@@ -484,9 +512,11 @@
 
 		container.compounds[entity.id].graphics.clear();
 
-		for (var idE in entity.children) {
-			if (entity.children[idE].type == "Compound") this.renderCompound(container[entity.id], entity.children[idE]);
-			else this.renderEntity(container.compounds[entity.id], entity.children[idE]);
+		if (!entity.hiddenChildren) {
+			for (var idE in entity.children) {
+				if (entity.children[idE].type == "Compound") this.renderCompound(container[entity.id], entity.children[idE]);
+				else this.renderEntity(container.compounds[entity.id], entity.children[idE]);
+			}
 		}
 	};
 
