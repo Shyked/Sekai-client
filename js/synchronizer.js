@@ -39,7 +39,7 @@
 	    view.addEventListener('mouseleftdown', function(view, e) {
 			var x = (e.offsetX != undefined) ? e.offsetX : e.layerX - e.target.offsetLeft;
 			var y = (e.offsetY != undefined) ? e.offsetY : e.layerY - e.target.offsetTop;
-	    	var pos = view.removeOffset({x: x, y: y})
+	    	var pos = view.screenToWorldCoords({x: x, y: y})
 	    	Synchronizer.mouseDown(pos.x, pos.y);
 	    });
 
@@ -80,22 +80,12 @@
 
 	Synchronizer.prototype.playerJoin = function(content) {
 		var player = JSON.parse(content);
-		var prevText = null;
-		if (this.view.players[player.id] && this.view.players[player.id].entityId) 
-			prevText = this.view.players[player.id].text;
-		}
-		this.view.players[player.id] = player;
-		if (prevText != null) {
-			this.view.players[player.id].prevText = prevText;
-		}
+		this.view.newPlayer(player);
 	};
 
 	Synchronizer.prototype.playerLeave = function(content) {
 		var player = JSON.parse(content);
-		if (this.view.players[player.id]) {
-			//delete this.view.players[player.id];
-			this.view.players[player.id].delete = true;
-		}
+		this.view.clearPlayer(player.id);
 	};
 
 	Synchronizer.prototype.defineWorld = function(content) {
@@ -218,7 +208,6 @@
 	};
 
 	Synchronizer.prototype.chatboxMessage = function(content) {
-		console.log("msg");
 		var messageObject = JSON.parse(content);
 		if (document.getElementById('chatboxMessages')) {
 			document.getElementById('chatboxMessages').addMessage(
