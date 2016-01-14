@@ -113,9 +113,7 @@
 		this.physicsWorld = Physics();
 
 		// ensure objects bounce when edge collision is detected
-		this.physicsWorld.add(Physics.behavior('body-impulse-response', {
-			mtvThreshold: 0.1
-		}));
+		this.physicsWorld.add(Physics.behavior('body-impulse-response'));
 		this.physicsWorld.add(Physics.behavior('body-collision-detection'));
 		this.physicsWorld.add(Physics.behavior('sweep-prune'));
 
@@ -138,6 +136,8 @@
 		var angleDistVel;
 		var angleDistPos;
 		var vel;
+		var modAngle;
+		var deltaAngle;
 		for (var idE in this.entities) {
 			if (this.entities[idE].player) {
 				if (this.entities[idE].move) {
@@ -168,6 +168,25 @@
 					}
 					this.entities[idE].physicsBody.state.vel.x = vel.x;
 					this.entities[idE].physicsBody.state.vel.y = vel.y;
+				}
+			}
+			if (!this.entities[idE].rotation) {
+				if (this.type == "circular") {
+
+				}
+				else if (this.type == "flat") {
+					modAngle = Math.mod(this.entities[idE].physicsBody.state.angular.pos, 2 * Math.PI);
+					if (modAngle < Math.PI) {
+						deltaAngle = Math.max(-modAngle, -modAngle);
+					}
+					else {
+						deltaAngle = Math.max((2 * Math.PI - modAngle), (2 * Math.PI - modAngle));
+					}
+					this.entities[idE].physicsBody.state.angular.pos = 0;
+					this.entities[idE].physicsBody.state.old.angular.pos = 0;
+					/*this.entities[idE].physicsBody.state.angular.vel = 0;
+					this.entities[idE].physicsBody.state.old.angular.vel = 0;*/
+					//if (idE > 2) console.log(this.entities[idE].physicsBody.state.angular.pos);
 				}
 			}
 		}

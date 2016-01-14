@@ -81,9 +81,7 @@
 	Synchronizer.prototype.playerJoin = function(content) {
 		var player = JSON.parse(content);
 		var prevText = null;
-		console.log("JOIN ! (" + player.id + ")");
-		if (this.view.players[player.id] && this.view.players[player.id].entityId) {
-			console.log("Saving prevText...");
+		if (this.view.players[player.id] && this.view.players[player.id].entityId) 
 			prevText = this.view.players[player.id].text;
 		}
 		this.view.players[player.id] = player;
@@ -94,9 +92,10 @@
 
 	Synchronizer.prototype.playerLeave = function(content) {
 		var player = JSON.parse(content);
-		console.log("LEAVE ! (" + player.id + ")");
-		//delete this.view.players[player.id];
-		this.view.players[player.id].delete = true;
+		if (this.view.players[player.id]) {
+			//delete this.view.players[player.id];
+			this.view.players[player.id].delete = true;
+		}
 	};
 
 	Synchronizer.prototype.defineWorld = function(content) {
@@ -194,12 +193,14 @@
 	};
 	Synchronizer.prototype.keyUp = function(key) {
 		if (this.playerId) {
-			this.socket.emit('keyup', JSON.stringify({
-				"key": key,
-				"entity": this.world.entities[this.playerId].export()
-			}));
-			if (key == "Q" || key == "LEFT") this.stopRoll("left");
-			else if (key == "D" || key == "RIGHT") this.stopRoll("right");
+			if (this.world.entities[this.playerId]) {
+				this.socket.emit('keyup', JSON.stringify({
+					"key": key,
+					"entity": this.world.entities[this.playerId].export()
+				}));
+				if (key == "Q" || key == "LEFT") this.stopRoll("left");
+				else if (key == "D" || key == "RIGHT") this.stopRoll("right");
+			}
 		}
 	};
 

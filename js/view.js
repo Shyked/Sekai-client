@@ -79,9 +79,9 @@
 
 	var STYLE_NICKNAME = {
 	    font : '16px Caviar Dreams',
-	    fill : 'rgba(255,255,255,0.8)',
-	    stroke : 'rgba(0,0,0,0.3)',
-    	strokeThickness : 3
+	    fill : 'rgba(255,255,255,1)',
+	    stroke : 'rgba(5,20,50,1)',
+    	strokeThickness : 5
 	};
 
 
@@ -306,7 +306,7 @@
 					this.moveCamera(newDelta, true);
 				}
 				else if (this.count % 60 == 0 && this.entityFocusId != null) {
-					if (this.distFromEntity(this.world.entities[idE]) > MAX_ENTITY_DISTANCE) {
+					if (this.distFromEntity(this.world.entities[idE]) > MAX_ENTITY_DISTANCE && !this.world.entities[idE].player) {
 						this.world.removeEntity(idE);
 					}
 				}
@@ -315,12 +315,10 @@
 			var e, aabb, radius, pos, b, angle, angleDelta, positionDelta, progressSinus;
 			for (var idP in this.players) {
 				if (this.players[idP].prevText) {
-					console.log("Ow, prevText ! (" + idP + ")");
 					this.stage.removeChild(this.players[idP].prevText);
 					delete this.players[idP].prevText;
 				}
 				if (this.players[idP].delete) {
-					console.log("Ow, I need to delete this one ! (" + idP + ")");
 					this.stage.removeChild(this.players[idP].text);
 					delete this.players[idP];
 				}
@@ -371,7 +369,7 @@
 						this.players[idP].text.rotation = angle + Math.PI;
 					}
 					else {
-						this.stage.removeChild(this.players[idP].text);
+						//this.stage.removeChild(this.players[idP].text);
 					}
 				}
 			}
@@ -662,8 +660,8 @@
 			this.stage.rotation = - (angleDist.angle + Math.PI/2);
 		}
 		else if (this.world.type == "flat") {
-			this.stage.position.x = -this.offset.x + this.renderer.width / 2;
-			this.stage.position.y = -this.offset.y + this.renderer.height / 2;
+			this.stage.position.x = -this.offset.x * this.stage.scale.x + this.renderer.width / 2;
+			this.stage.position.y = -this.offset.y * this.stage.scale.y + this.renderer.height / 2;
 			this.stage.rotation = 0;
 		}
 		/*this.stage.position.x = -this.offset.x + this.renderer.width / 2;
