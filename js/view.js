@@ -335,10 +335,27 @@
 		}
 
 		// No texture
-		if (!entity.texture || DEBUG) {
+		if (!entity.texture || entity.style || DEBUG) {
 
-			container.graphics.lineStyle(2, 0xDDEEFF);
-			container.graphics.beginFill(0xDDEEFF, 0);
+			if (entity.style) {
+				var lineSize = ((entity.style.linesize) ? entity.style.linesize : 0),
+					lineColor = ((entity.style.linecolor) ? entity.style.linecolor : "0xDDEEFF");
+				var backgroundColor, backgroundOpacity;
+				if (entity.style.background) {
+					backgroundColor = entity.style.background;
+					backgroundOpacity = 1;
+				}
+				else {
+					backgroundColor = "0x000000";
+					backgroundOpacity = 0;
+				}
+				container.graphics.lineStyle(lineSize, lineColor);
+				container.graphics.beginFill(backgroundColor, backgroundOpacity);
+			}
+			else {
+				container.graphics.lineStyle(2, 0xDDEEFF);
+				container.graphics.beginFill(0xDDEEFF, 0);
+			}
 
 			if (entity.type == 'Rectangle') {
 
