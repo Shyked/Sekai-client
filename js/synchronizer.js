@@ -202,7 +202,10 @@
 		if (this.world) {
 			var player = this.world.entities[this.playerId];
 			if (player) {
-				this.socket.emit('player', JSON.stringify(player.export()));
+				this.socket.emit('player', JSON.stringify({
+					"worldId": this.world.id,
+					"player": player.export()
+				}));
 			}
 		}
 	};

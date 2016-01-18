@@ -22,11 +22,13 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	var ZOOM_MIN = 0.6;
+	//var ZOOM_MIN = 0.6;
+	var ZOOM_MIN = 0.05;
 	var ZOOM_MAX = 1.8;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
 
+	//var MAX_ENTITY_DISTANCE = 2800;
 	var MAX_ENTITY_DISTANCE = 2800;
 
 	var KEYS = {
@@ -93,7 +95,8 @@
 	 */
 	var View = function(world) {
 
-		this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		// this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
 		this.renderer.backgroundColor = 0x202430;
 	    document.body.appendChild(this.renderer.view);
 	    this.stage = new PIXI.Container();
@@ -230,6 +233,7 @@
 			},1000)
 		}
 		this.entityFocusId = null;
+		this.renderEntityId = null;
 		this.graphics.clear();
 		this.stage.removeChildren();
 
@@ -273,16 +277,22 @@
 	 * The loop used to render
 	 */
 	View.prototype.update = function(bodies, meta) {
-		if (this.run) {
+		if (this.run && this.tick % 2 == 0) {
+
+			var time = (new Date().getTime());
 
 			this.graphics.clear();
 
 			if (DEBUG) this.drawGrid(this.graphics);
 
+			console.log("=======");
+
 			// For each entities
 			for (var idE in this.world.entities) {
-				if (this.world.entities[idE].type == "Compound") this.renderCompound(this, this.world.entities[idE]);
-				else this.renderEntity(this, this.world.entities[idE]);
+				if (this.renderEntityId == null || this.renderEntityId == idE) {
+					if (this.world.entities[idE].type == "Compound") this.renderCompound(this, this.world.entities[idE]);
+					else this.renderEntity(this, this.world.entities[idE]);
+				}
 				
 
 				// Remove far, non players and not focused entities
@@ -299,9 +309,10 @@
 
 			this.renderer.render(this.stage);
 
-			this.tick++;
+			// if (this.tick % 60 == 0) console.log((new Date().getTime()) - time);
 
 		}
+		this.tick++;
 	};
 
 	/**
@@ -353,7 +364,7 @@
 				container.graphics.beginFill(backgroundColor, backgroundOpacity);
 			}
 			else {
-				container.graphics.lineStyle(2, 0xDDEEFF);
+				container.graphics.lineStyle(1, 0xDDEEFF);
 				container.graphics.beginFill(0xDDEEFF, 0);
 			}
 
@@ -396,7 +407,7 @@
 
 			}
 
-			else if (entity.type == 'Polygon') {
+			else if (entity.type == 'Polygon') { // Mettre un compteur pour calculer le temps passé à dessiner ?
 
 				if (b.geometry.vertices[0]) {
 					pos = rotatePoint(
@@ -485,7 +496,6 @@
 			};
 		}
 
-
 		// Texture
 		if (entity.texture) {
 
@@ -544,14 +554,14 @@
 	 * A little bugy with circular worlds.
 	 */
 	View.prototype.drawGrid = function(graphics) {
-		graphics.lineStyle(0.1, 0x888888, 1);
+		graphics.lineStyle(1, 0x444444, 1);
 
-		var gridSpace = 50;
+		var gridSpace = 200;
 
-		var left = this.offset.x - this.renderer.width / 2;
-		var right = this.offset.x + this.renderer.width / 2;
-		var top = this.offset.y - this.renderer.height / 2;
-		var bottom = this.offset.y + this.renderer.height / 2;
+		var left = this.offset.x - (this.renderer.width / 2) * (1/view.stage.scale.x);
+		var right = this.offset.x + (this.renderer.width / 2) * (1/view.stage.scale.x);
+		var top = this.offset.y - (this.renderer.height / 2) * (1/view.stage.scale.y);
+		var bottom = this.offset.y + (this.renderer.height / 2) * (1/view.stage.scale.y);
 		for (var i = left - left % gridSpace ; i < right ; i += gridSpace) {
 			graphics.moveTo(i, top);
 			graphics.lineTo(i, bottom);
@@ -562,6 +572,23 @@
 		}
 
 		//graphics.endFill();
+	};
+
+	View.prototype.renderOneEntity = function(entityId) {
+		if (entityId !== undefined && entityId !== null) {
+			if (this.renderEntityId === null || this.renderEntityId === undefined) {
+				this.storeEntityFocusId = this.entityFocusId;
+				for (var idE in this.world.entities) {
+					this.removeSprite(idE);
+				}
+			}
+			this.entityFocusId = entityId;
+			this.renderEntityId = entityId;
+		}
+		else {
+			this.renderEntityId = null;
+			this.entityFocusId = this.storeEntityFocusId;
+		}
 	};
 
 
@@ -647,20 +674,27 @@
 
 			var dx = fEntity.physicsBody.state.pos.x - this.offset.x;
 			var dy = fEntity.physicsBody.state.pos.y - this.offset.y;
+
 			var newDelta = {x: 0, y: 0};
 
-			if (Math.abs(dx) > CAMERA_MIN * this.renderer.width / 2) {
-				newDelta.x += (dx - Math.sign(dx) * CAMERA_MIN * this.renderer.width / 2) * CAMERA_SPEED;
+			if (this.renderEntityId !== null) {
+				newDelta = {x: dx, y: dy};
 			}
-			if (Math.abs(dx) > CAMERA_MAX * this.renderer.width / 2) {
-				newDelta.x += dx - Math.sign(dx) * (CAMERA_MAX * this.renderer.width / 2 + 1);
-			}
+			else {
 
-			if (Math.abs(dy) > CAMERA_MIN * this.renderer.height / 2) {
-				newDelta.y += (dy - Math.sign(dy) * CAMERA_MIN * this.renderer.height / 2) * CAMERA_SPEED;
-			}
-			if (Math.abs(dy) > CAMERA_MAX * this.renderer.height / 2) {
-				newDelta.y += dy - Math.sign(dy) * (CAMERA_MAX * this.renderer.height / 2 + 1);
+				if (Math.abs(dx) > CAMERA_MIN * this.renderer.width / 2) {
+					newDelta.x += (dx - Math.sign(dx) * CAMERA_MIN * this.renderer.width / 2) * CAMERA_SPEED;
+				}
+				if (Math.abs(dx) > CAMERA_MAX * this.renderer.width / 2) {
+					newDelta.x += dx - Math.sign(dx) * (CAMERA_MAX * this.renderer.width / 2 + 1);
+				}
+
+				if (Math.abs(dy) > CAMERA_MIN * this.renderer.height / 2) {
+					newDelta.y += (dy - Math.sign(dy) * CAMERA_MIN * this.renderer.height / 2) * CAMERA_SPEED;
+				}
+				if (Math.abs(dy) > CAMERA_MAX * this.renderer.height / 2) {
+					newDelta.y += dy - Math.sign(dy) * (CAMERA_MAX * this.renderer.height / 2 + 1);
+				}
 			}
 
 			this.moveCamera(newDelta, true);
@@ -674,19 +708,21 @@
 	 * Can move the camera with relative or absolute coordinates
 	 */
 	View.prototype.moveCamera = function(vector, relative) {
-		var relative = (relative) ? 1 : 0;
-		this.offset.x = this.offset.x * relative + vector.x;
-		this.offset.y = this.offset.y * relative + vector.y;
-		if (this.world.type == "circular") {
-			var angleDist = toAngleDist(this.offset);
-			this.stage.position.x = this.renderer.width / 2;
-			this.stage.position.y = (angleDist.dist * this.stage.scale.y + this.renderer.height / 2);
-			this.stage.rotation = - (angleDist.angle + Math.PI/2);
-		}
-		else if (this.world.type == "flat") {
-			this.stage.position.x = -this.offset.x * this.stage.scale.x + this.renderer.width / 2;
-			this.stage.position.y = -this.offset.y * this.stage.scale.y + this.renderer.height / 2;
-			this.stage.rotation = 0;
+		if (this.world) {
+			var relative = (relative) ? 1 : 0;
+			this.offset.x = this.offset.x * relative + vector.x;
+			this.offset.y = this.offset.y * relative + vector.y;
+			if (this.world.type == "flat" || this.renderEntityId !== null || DEBUG) {
+				this.stage.position.x = -this.offset.x * this.stage.scale.x + this.renderer.width / 2;
+				this.stage.position.y = -this.offset.y * this.stage.scale.y + this.renderer.height / 2;
+				this.stage.rotation = 0;
+			}
+			else if (this.world.type == "circular") {
+				var angleDist = toAngleDist(this.offset);
+				this.stage.position.x = this.renderer.width / 2;
+				this.stage.position.y = (angleDist.dist * this.stage.scale.y + this.renderer.height / 2);
+				this.stage.rotation = - (angleDist.angle + Math.PI/2);
+			}
 		}
 	};
 
