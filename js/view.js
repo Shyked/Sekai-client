@@ -95,7 +95,9 @@
 	 */
 	var View = function(world) {
 
-		this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		if (document.location.href.split("?").length > 1 && document.location.href.split("?")[1].indexOf("Canvas") != -1)
+			this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		else this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
 		// this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
 		this.renderer.backgroundColor = 0x202430;
 	    document.body.appendChild(this.renderer.view);
@@ -284,8 +286,6 @@
 			this.graphics.clear();
 
 			if (DEBUG) this.drawGrid(this.graphics);
-
-			console.log("=======");
 
 			// For each entities
 			for (var idE in this.world.entities) {
@@ -823,6 +823,9 @@
 		}
 		else if (key == "0") {
 			view.zoom(1, false);
+		}
+		else if (key == "P") {
+			console.log(view.world);
 		}
 	};
 

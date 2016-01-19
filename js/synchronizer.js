@@ -96,7 +96,7 @@
 		this.view.stopRender();
 		if (this.world) Worlds.delete(this.world.id);
 
-		var worldJSON = JSON.parse(content);
+		var worldJSON = JSON.parse(content); console.log(worldJSON);
 		this.view.players = worldJSON.players;
 		worldJSON = worldJSON.world;
 		var world = Worlds.new(worldJSON.id);
