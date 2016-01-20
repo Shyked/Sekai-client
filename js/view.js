@@ -98,12 +98,19 @@
 		if (document.location.href.split("?").length > 1 && document.location.href.split("?")[1].indexOf("Canvas") != -1)
 			this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
 		else this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
-		// this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
+		
 		this.renderer.backgroundColor = 0x202430;
 	    document.body.appendChild(this.renderer.view);
 	    this.stage = new PIXI.Container();
 	    this.stage.position.x = this.renderer.width / 2;
 	    this.stage.position.y = this.renderer.height / 2;
+	    /*this.stage.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
+		    stage.children.sort(function(a,b) {
+		        a.zIndex = a.zIndex || 0;
+		        b.zIndex = b.zIndex || 0;
+		        return b.zIndex - a.zIndex
+		    });
+		};*/
 	    this.PIXIContainer = this.stage;
 	    this.stage.scale.x = 1;
 	    this.stage.scale.y = 1;
@@ -279,7 +286,7 @@
 	 * The loop used to render
 	 */
 	View.prototype.update = function(bodies, meta) {
-		if (this.run && this.tick % 2 == 0) {
+		if (this.run && this.tick % 2 >= 0) {
 
 			var time = (new Date().getTime());
 
@@ -308,8 +315,6 @@
 
 
 			this.renderer.render(this.stage);
-
-			// if (this.tick % 60 == 0) console.log((new Date().getTime()) - time);
 
 		}
 		this.tick++;

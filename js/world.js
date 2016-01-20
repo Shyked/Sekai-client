@@ -22,7 +22,7 @@
 
 
 
-	var GROUND_HEIGHT = 1500;
+	var GROUND_DEPTH = 1500;
 
 
 
@@ -179,21 +179,18 @@
 			}
 			if (!this.entities[idE].rotation) {
 				if (this.type == "circular") {
-
+					var targetAngle = Math.mod(toAngleDist({
+						x: this.entities[idE].physicsBody.state.pos.x,
+						y: this.entities[idE].physicsBody.state.pos.y,
+					})["angle"] + Math.PI / 2, Math.PI * 2);
+					var currentAngle = Math.mod(this.entities[idE].physicsBody.state.angular.pos, 2 * Math.PI);
+					var toTarget = targetAngle - currentAngle;
+					this.entities[idE].physicsBody.state.old.angular.pos = this.entities[idE].physicsBody.state.angular.pos + toTarget;
+					this.entities[idE].physicsBody.state.angular.pos = this.entities[idE].physicsBody.state.angular.pos + toTarget;
 				}
 				else if (this.type == "flat") {
-					modAngle = Math.mod(this.entities[idE].physicsBody.state.angular.pos, 2 * Math.PI);
-					if (modAngle < Math.PI) {
-						deltaAngle = Math.max(-modAngle, -modAngle);
-					}
-					else {
-						deltaAngle = Math.max((2 * Math.PI - modAngle), (2 * Math.PI - modAngle));
-					}
 					this.entities[idE].physicsBody.state.angular.pos = 0;
 					this.entities[idE].physicsBody.state.old.angular.pos = 0;
-					/*this.entities[idE].physicsBody.state.angular.vel = 0;
-					this.entities[idE].physicsBody.state.old.angular.vel = 0;*/
-					//if (idE > 2) console.log(this.entities[idE].physicsBody.state.angular.pos);
 				}
 			}
 		}
@@ -243,6 +240,7 @@
 	 */
 	World.prototype.export = function() {
 		var forJSONEntities = {};
+		var count = 0;
 		for (var id in this.entities) {
 			forJSONEntities[id] = this.entities[id].export();
 		}
@@ -289,7 +287,7 @@
 		this.entitiesCount = worldJSON.entitiesCount || this.entitiesCount;
 
 		if (worldJSON.ground) {
-			try { this.generateGround(worldJSON.ground, worldJSON.groundTextures, worldJSON.type); } catch (e) { console.log(e); }
+			try { this.generateGround(worldJSON.ground, worldJSON.groundTextures, worldJSON.type, worldJSON.groundDepth); } catch (e) { console.log(e); }
 		}
 
 		this.updateEntities(worldJSON.entities);
@@ -298,13 +296,14 @@
 
 
 
-	World.prototype.generateGround = function(ground, textures, type) {
+	World.prototype.generateGround = function(ground, textures, type, groundDepth) {
 		textures = (textures)?textures:[];
 		ground = (ground)?ground:[];
+		groundDepth = (groundDepth)?groundDepth:GROUND_DEPTH;
 
 		var world = this;
 
-		var createPart = function(pos, prevPos, type) {
+		var createPart = function(pos, prevPos) {
 			if (type == "circular") {
 				return {
 					"type": "Polygon",
@@ -326,8 +325,8 @@
 					"vertices": [
 						{x: prevPos.x, y: prevPos.y},
 						{x: pos.x, y: pos.y},
-						{x: pos.x, y: pos.y + GROUND_HEIGHT},
-						{x: prevPos.x, y: prevPos.y + GROUND_HEIGHT}
+						{x: pos.x, y: pos.y + groundDepth},
+						{x: prevPos.x, y: prevPos.y + groundDepth}
 					],
 					"options": {
 						"treatment": "static",
@@ -338,7 +337,7 @@
 			}
 		};
 
-		var createCompound = function(children, texture, type, positions) {
+		var createCompound = function(children, texture, positions) {
 
 			var entity = world.addEntity({
 				"type": "Compound",
@@ -389,10 +388,11 @@
 		var texture = "";
 		var positions = [];
 		for (var idG in ground) {
-			if (children.length > 0) createCompound(children, texture, type, positions);
+			if (children.length > 0) createCompound(children, texture, positions);
 			var part = ground[idG];
 			children = [];
 			positions = [];
+			if (type == "flat") prevPos = null;
 			for (var idP in part) {
 				if (type == "circular") {
 					var pos = rotatePoint(
@@ -411,7 +411,7 @@
 					positions.push(pos);
 				}
 				if (prevPos) {
-					var child = createPart(pos, prevPos, type);
+					var child = createPart(pos, prevPos);
 					children.push(child);
 				}
 
@@ -421,8 +421,8 @@
 			texture = textures[idG];
 		}
 
-		if (type == "circular") children.push(createPart(firstPos, prevPos, type)); // Cycle the form
-		createCompound(children, texture, type, positions);
+		if (type == "circular") children.push(createPart(firstPos, prevPos)); // Cycle the form
+		createCompound(children, texture, positions);
 
 	};
 
