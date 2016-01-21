@@ -1,6 +1,7 @@
 (function() {
 
 	var Worlds = window.Worlds;
+	var Chatbox = window.Chatbox;
 
 	var LAG = 0;
 	var RAND_LAG = 0;
@@ -53,6 +54,13 @@
 	    view.addEventListener('keyup', function(view, key) {
 	    	Synchronizer.keyUp(key);
 	    });
+
+
+	    Chatbox.addEventListener('send', function(chatbox, text) {
+	    	Synchronizer.sendChatboxMessage(text);
+	    });
+
+
 
 
 	    // Intervals
@@ -164,11 +172,8 @@
 	Synchronizer.prototype.keyDown = function(key) {
 		if (this.playerId) {
 			if (key == "R") this.socket.emit('restartWorld', "");
-			else if ((key == "ENTER" || key == "/") && document.getElementById('chatboxInput')) {
-				var text = document.getElementById('chatboxInput').enter();
-				if (text) {
-					this.socket.emit('chatboxMessage', JSON.stringify(text));
-				}
+			else if ((key == "ENTER" || key == "/") && Chatbox) {
+				Chatbox.enter();
 			}
 			else {
 				this.socket.emit('keydown', JSON.stringify({
@@ -212,13 +217,27 @@
 
 	Synchronizer.prototype.chatboxMessage = function(content) {
 		var messageObject = JSON.parse(content);
-		if (document.getElementById('chatboxMessages')) {
-			document.getElementById('chatboxMessages').addMessage(
+		if (Chatbox) {
+			Chatbox.addMessage(
 				messageObject.msg,
 				messageObject.nickname,
 				messageObject.color,
 				messageObject.type
 			);
+		}
+	};
+
+	Synchronizer.prototype.sendChatboxMessage = function(text) {
+		if (text.length > 0) {
+			if (text.substr(0,1) == "/") {
+				var command = text.substr(1).split(" ");
+				if (command[0] == "zoom") {
+					view.zoom(parseFloat(command[1]));
+				}
+
+				else this.socket.emit('chatboxMessage', JSON.stringify(text));
+			}
+			else this.socket.emit('chatboxMessage', JSON.stringify(text));
 		}
 	};
 

@@ -2,6 +2,7 @@
 
 	var Worlds = window.Worlds;
 	var PIXI = window.PIXI;
+	var Chatbox = window.Chatbox;
 
 
 /*           *\
@@ -77,7 +78,7 @@
 		107: "+",
 		109: "-",
 		111: "/"
-	}
+	};
 
 	var STYLE_NICKNAME = {
 	    font : '16px Caviar Dreams',
@@ -104,25 +105,42 @@
 	    this.stage = new PIXI.Container();
 	    this.stage.position.x = this.renderer.width / 2;
 	    this.stage.position.y = this.renderer.height / 2;
-	    /*this.stage.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
-		    stage.children.sort(function(a,b) {
+	    this.stage.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
+		    this.children.sort(function(a,b) {
 		        a.zIndex = a.zIndex || 0;
 		        b.zIndex = b.zIndex || 0;
-		        return b.zIndex - a.zIndex
+		        return a.zIndex - b.zIndex
 		    });
-		};*/
+		};
 	    this.PIXIContainer = this.stage;
 	    this.stage.scale.x = 1;
 	    this.stage.scale.y = 1;
 
-	    this.graphics = new PIXI.Graphics();
+	    // this.graphics = new PIXI.Graphics();
+	    this.graphics = {
+	    	"entities": new PIXI.Graphics(),
+	    	"grid": new PIXI.Graphics(),
+
+	    	"clear": function() {
+	    		for (var id in this) {
+	    			if (typeof this[id] != "function") this[id].clear();
+	    		}
+	    	},
+	    	"getAll": function() {
+	    		var res = [];
+				for (var id in this) {
+	    			if (typeof this[id] != "function") res.push(this[id]);
+	    		}
+	    		return res;
+	    	}
+	    };
 	    this.textures = {};
 	    this.sprites = {};
 	    this.compounds = {};
 	    this.players = {};
 	    this.entityFocusId = null;
 
-	    this.stage.addChild(this.graphics);
+	    this.stage.addChild(this.graphics.entities);
 
 	    this.world = world;
 
@@ -165,7 +183,7 @@
 	    var view = this;
 	    // Mouse events
 	    this.renderer.view.onmousedown = function(e) {
-	    	if (document.getElementById('chatboxInput')) document.getElementById('chatboxInput').blur();
+	    	if (Chatbox) Chatbox.blur();
 	    	if (e.button == 0) view.triggerEvent('mouseleftdown',e);
 	    	else if (e.button == 1) view.triggerEvent('mousemiddledown',e);
 	    	else if (e.button == 2) view.triggerEvent('mouserightdown',e);
@@ -194,7 +212,7 @@
 
 	    this.preventKeyRepeat = {};
 	    window.onkeydown = function(e) {
-	    	if (!view.preventKeyRepeat[e.keyCode] && (document.getElementById('chatbox').getAttribute("data-focus") != "true" || KEYS[e.keyCode] == "ENTER")) {
+	    	if (!view.preventKeyRepeat[e.keyCode] && !Chatbox.focused) {
 	    		view.preventKeyRepeat[e.keyCode] = true;
 	    		var key = KEYS[e.keyCode];
 	    		view.triggerEvent('keydown',key);
@@ -203,7 +221,7 @@
 	    this.addEventListener('keydown', view.keyDown);
 
 	    window.onkeyup = function(e) {
-	    	if (document.getElementById('chatbox').getAttribute("data-focus") != "true" || KEYS[e.keyCode] == "ENTER") {
+	    	if (!Chatbox.focused) {
 		    	view.preventKeyRepeat[e.keyCode] = false;
 		    	var key = KEYS[e.keyCode];
 		    	view.triggerEvent('keyup',key);
@@ -247,7 +265,10 @@
 		this.stage.removeChildren();
 
 		// Rebuild
-		this.stage.addChild(this.graphics);
+		var graphics = this.graphics.getAll();
+		for (var idG in graphics) {
+			this.stage.addChild(graphics[idG]);
+		}
 		this.world = world;
 		this.world.addEventListener("removeEntity", function(entityId) {view.removeSprite(entityId);});
 		this.world.physicsWorld.add(this.physicsRenderer);
@@ -292,7 +313,7 @@
 
 			this.graphics.clear();
 
-			if (DEBUG) this.drawGrid(this.graphics);
+			if (DEBUG) this.drawGrid(this.graphics.grid);
 
 			// For each entities
 			for (var idE in this.world.entities) {
@@ -365,12 +386,12 @@
 					backgroundColor = "0x000000";
 					backgroundOpacity = 0;
 				}
-				container.graphics.lineStyle(lineSize, lineColor);
-				container.graphics.beginFill(backgroundColor, backgroundOpacity);
+				container.graphics.entities.lineStyle(lineSize, lineColor);
+				container.graphics.entities.beginFill(backgroundColor, backgroundOpacity);
 			}
 			else {
-				container.graphics.lineStyle(1, 0xDDEEFF);
-				container.graphics.beginFill(0xDDEEFF, 0);
+				container.graphics.entities.lineStyle(1, 0xDDEEFF);
+				container.graphics.entities.beginFill(0xDDEEFF, 0);
 			}
 
 			if (entity.type == 'Rectangle') {
@@ -398,9 +419,9 @@
 					),
 				];
 
-				container.graphics.moveTo(pos[0].x + positionDelta.x, pos[0].y + positionDelta.y);
+				container.graphics.entities.moveTo(pos[0].x + positionDelta.x, pos[0].y + positionDelta.y);
 				for (var i = 1 ; i < 4 ; i++) {
-					container.graphics.lineTo(pos[i].x + positionDelta.x, pos[i].y + positionDelta.y);
+					container.graphics.entities.lineTo(pos[i].x + positionDelta.x, pos[i].y + positionDelta.y);
 				}
 
 			}
@@ -408,7 +429,7 @@
 			else if (entity.type == 'Circle') {
 
 				pos = {x: b.state.pos.x, y: b.state.pos.y};
-				container.graphics.drawCircle(pos.x + positionDelta.x, pos.y + positionDelta.y, entity.radius);
+				container.graphics.entities.drawCircle(pos.x + positionDelta.x, pos.y + positionDelta.y, entity.radius);
 
 			}
 
@@ -420,7 +441,7 @@
 						angleDelta + b.state.angular.pos,
 						b.state.pos.x, b.state.pos.y
 					);
-					container.graphics.moveTo(pos.x + positionDelta.x, pos.y + positionDelta.y);
+					container.graphics.entities.moveTo(pos.x + positionDelta.x, pos.y + positionDelta.y);
 
 					for (var i = 1 ; i < b.geometry.vertices.length ; i++) {
 						pos = rotatePoint(
@@ -428,13 +449,13 @@
 							angleDelta + b.state.angular.pos,
 							b.state.pos.x, b.state.pos.y
 						);
-						container.graphics.lineTo(pos.x + positionDelta.x, pos.y + positionDelta.y);								
+						container.graphics.entities.lineTo(pos.x + positionDelta.x, pos.y + positionDelta.y);								
 					}
 				}
 
 			}
 
-			container.graphics.endFill();
+			container.graphics.entities.endFill();
 		}
 
 		// Texture
@@ -542,7 +563,7 @@
 		container.compounds[entity.id].PIXIContainer.rotation = b.state.angular.pos + angleDelta;
 
 
-		container.compounds[entity.id].graphics.clear();
+		container.compounds[entity.id].graphics.entities.clear();
 
 		if (!entity.hiddenChildren) {
 			for (var idE in entity.children) {
@@ -604,15 +625,17 @@
 	 */
 	View.prototype.defineCompound = function(container, compoundId) {
 		var PIXIContainer = new PIXI.Container();
-		var graphics = new PIXI.Graphics();
 		container.compounds[compoundId] = {
-			"graphics": graphics,
+			"graphics": {
+				"entities": new PIXI.Graphics()
+			},
 			"sprites": {},
 			"compounds": {},
 			"PIXIContainer": PIXIContainer
 		};
-		PIXIContainer.addChild(graphics);
+		PIXIContainer.addChild(container.compounds[compoundId].graphics.entities);
 		container.PIXIContainer.addChild(PIXIContainer);
+		if (container == this) this.stage.updateLayersOrder();
 	};
 
 
@@ -647,6 +670,7 @@
 		container.sprites[id].anchor.x = 0.5;
 		container.sprites[id].anchor.y = 0.5;
 		container.PIXIContainer.addChild(container.sprites[id]);
+		if (container == this) this.stage.updateLayersOrder;
 	};
 
 	/**
@@ -749,7 +773,7 @@
 
 	/**
 	 * triggerEvent()
-	 * Triggers an event withthe parameters this and result
+	 * Triggers an event with the parameters this and result
 	 */
 	View.prototype.triggerEvent = function(event, result) {
 		for (var id in this.events[event]) {
@@ -829,9 +853,6 @@
 		else if (key == "0") {
 			view.zoom(1, false);
 		}
-		else if (key == "P") {
-			console.log(view.world);
-		}
 	};
 
 
@@ -892,7 +913,9 @@
 			if (this.world.entities[this.players[idP].entityId]) {
 				if (this.players[idP].text == undefined) {
 					this.players[idP].text = new PIXI.Text(this.players[idP].nickname,STYLE_NICKNAME);
+					this.players[idP].text.zIndex = 1;
 					this.stage.addChild(this.players[idP].text);
+					this.stage.updateLayersOrder();
 				}
 				b = this.world.entities[this.players[idP].entityId].physicsBody;
 				e = this.world.entities[this.players[idP].entityId];

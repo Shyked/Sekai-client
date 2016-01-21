@@ -1,3 +1,265 @@
+
+
+var HISTORY_LENGTH = 40;
+
+var KEYS = {
+    13: "ENTER",
+    32: "SPACE",
+    37: "LEFT",
+    38: "UP",
+    39: "RIGHT",
+    40: "DOWN",
+    65: "A",
+    66: "B",
+    67: "C",
+    68: "D",
+    69: "E",
+    70: "F",
+    71: "G",
+    72: "H",
+    73: "I",
+    74: "J",
+    75: "K",
+    76: "L",
+    77: "M",
+    78: "N",
+    79: "O",
+    80: "P",
+    81: "Q",
+    82: "R",
+    83: "S",
+    84: "T",
+    85: "U",
+    86: "V",
+    87: "W",
+    88: "X",
+    89: "Y",
+    90: "Z",
+    96: "0",
+    97: "1",
+    98: "2",
+    99: "3",
+    100: "4",
+    101: "5",
+    102: "6",
+    103: "7",
+    104: "8",
+    105: "9",
+    107: "+",
+    109: "-",
+    111: "/"
+};
+
+
+
+
+var Chatbox = function() {
+
+    // DOM
+
+    this.chatbox = document.createElement('div');
+    this.chatbox.id = "chatbox";
+    this.chatbox.innerHTML =   '<div id="chatboxMessages"></div>'
+                        + '<span class="preInput">&gt;</span>'
+                        + '<input id="chatboxInput" type="text" value="" maxlength="300" />';
+
+    document.body.appendChild(this.chatbox);
+
+    this.chatboxInput = document.getElementById('chatboxInput');
+    this.chatboxMessages = document.getElementById('chatboxMessages');
+
+
+    // EVENTS
+
+    var chatbox = this;
+    this.chatboxInput.onfocus = function() { chatbox.onfocus(); };
+    this.chatboxInput.onblur = function() { chatbox.onblur(); };
+    this.chatboxInput.onkeydown = function(e) { return chatbox.onkeydown(e); };
+    this.chatboxInput.onkeyup = function(e) { return chatbox.onkeyup(e); };
+    this.chatboxMessages.onanimationended = function() { chatbox.hideChatbox(); };
+    this.chatboxMessages.addEventListener("animationend", function() { chatbox.hideChatbox(); });
+    this.chatboxMessages.addEventListener("WebkitAnimationEnd", function() { chatbox.hideChatbox(); });
+
+    this.events = {
+        "enter": [],
+        "send": []
+    };
+
+    this.preventKeyRepeat = {};
+
+
+    // VARS
+
+    this.hideTimeout = null;
+    this.focused = false;
+    this.history = [];
+    this.historyPos = 0;
+    this.historyKeepLine = "";
+
+};
+
+Chatbox.prototype.focus = function() {
+    this.chatboxInput.focus();
+};
+
+Chatbox.prototype.blur = function() {
+    this.chatboxInput.blur();
+};
+
+Chatbox.prototype.onfocus = function() {
+    this.chatbox.setAttribute("data-focus","true");
+    this.focused = true;
+    this.displayMessages(false);
+};
+
+Chatbox.prototype.onblur = function() {
+    this.chatbox.setAttribute("data-focus","");
+    this.focused = false;
+    this.displayMessages(1);
+};
+
+Chatbox.prototype.onkeydown = function(e) {
+    var key = KEYS[e.keyCode];
+    if (!this.preventKeyRepeat[key]) {
+        this.preventKeyRepeat[key] = true;
+
+        if (key == "ENTER") {
+            this.enter();
+        }
+        else if (key == "UP") {
+            this.navHistory(-1);
+            return false;
+        }
+        else if (key == "DOWN") {
+            this.navHistory(1);
+            return false;
+        }
+
+    }
+};
+
+Chatbox.prototype.onkeyup = function(e) {
+    var key = KEYS[e.keyCode];
+    this.preventKeyRepeat[key] = false;
+};
+
+
+Chatbox.prototype.send = function() {
+    var text = this.chatboxInput.value;
+    this.chatboxInput.value = "";
+    this.displayMessages(1000);
+    this.blur();
+
+    // History
+    this.history.push(text);
+    if (this.history.length > HISTORY_LENGTH) this.history.splice(0, this.history.length - HISTORY_LENGTH);
+    this.historyPos = this.history.length;
+
+    this.triggerEvent("send", text);
+    return text;
+};
+
+Chatbox.prototype.enter = function() {
+    if (this.focused) {
+        if (this.chatboxInput.value.length > 0) return this.send();
+        else this.blur();
+    }
+    else {
+        this.focus();
+    }
+    return null;
+};
+
+
+Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
+    if (nickname == "") nickname = "Anonymous";
+    var msgDOM = document.createElement("div");
+    var nicknameDOM = document.createElement("span");
+    msgDOM.className = "message";
+    nicknameDOM.className = "nickname";
+    nicknameDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+    if (type == 0) nicknameDOM.innerHTML = "[" + nickname + "]";
+    else if (type == 1) nicknameDOM.innerHTML = "&lt;" + nickname + "&gt;";
+    else if (type == 2) nicknameDOM.innerHTML = nickname;
+    msgDOM.innerHTML = nicknameDOM.outerHTML + msg.escapeHtml();
+    this.chatboxMessages.appendChild(msgDOM);
+    if (this.chatboxMessages.children.length > 8) this.chatboxMessages.removeChild(this.chatboxMessages.children[0]);
+    this.displayMessages(Math.min(6000 + msg.length*100, 13000));
+};
+
+Chatbox.prototype.displayMessages = function(hideTimeout) {
+    this.chatbox.className = "displayMsg";
+    this.chatboxMessages.style.display = "block";
+    if (this.hideTimeout) clearTimeout(this.hideTimeout);
+    if (hideTimeout) {
+        if (!this.focused) this.hideTimeout = setTimeout(function(){ this.chatbox.className="hideMsg"; }, hideTimeout);
+    }
+};
+
+
+Chatbox.prototype.hideChatbox = function() {
+    if (this.chatbox.className == "hideMsg") {
+        this.chatboxMessages.style.display = "none";
+    }
+};
+
+
+
+Chatbox.prototype.navHistory = function(direction) {
+    if (this.historyPos == this.history.length) {
+        this.historyKeepLine = this.chatboxInput.value;
+    }
+
+    var newHistoryPos = this.historyPos + direction;
+    if (newHistoryPos < 0 || newHistoryPos > this.history.length) return;
+    this.historyPos = newHistoryPos;
+
+    if (this.historyPos == this.history.length) {
+        this.chatboxInput.value = this.historyKeepLine;
+    }
+    else {
+        this.chatboxInput.value = this.history[this.historyPos];
+    }
+
+    this.chatboxInput.selectionStart = this.chatboxInput.value.length;
+    this.chatboxInput.selectionEnd = this.chatboxInput.value.length;
+
+};
+
+
+
+/**
+ * triggerEvent()
+ * Triggers an event with the parameters this and result
+ */
+Chatbox.prototype.triggerEvent = function(event, result) {
+    for (var id in this.events[event]) {
+        this.events[event][id](this, result);
+    }
+};
+
+/**
+ * addEventListener()
+ * Adds a new event listener
+ */
+Chatbox.prototype.addEventListener = function(event, func) {
+    this.events[event].push(func);
+};
+
+
+
+
+
+
+
+window.Chatbox = new Chatbox();
+
+
+
+
+
+
+
 // Lib
 
 String.prototype.replaceAt=function(index, character) {
@@ -15,85 +277,3 @@ String.prototype.escapeHtml = function() {
 
   return this.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
-
-
-
-
-
-
-
-// Chatbox
-
-var chatboxInput;
-var chatbox;
-var chatboxMessages;
-
-window.newOnload(function() {
-    chatboxInput = document.getElementById('chatboxInput');
-    chatbox = document.getElementById('chatbox');
-    chatboxMessages = document.getElementById('chatboxMessages');
-
-    chatboxInput.onfocus = function() {
-        chatbox.setAttribute("data-focus","true");
-        chatboxMessages.displayMessages(false);
-        if (chatboxInput.lastMessage == undefined) chatboxInput.lastMessage = "";
-    };
-
-    chatboxInput.onblur = function() {
-        chatbox.setAttribute("data-focus","");
-        chatboxMessages.displayMessages(1);
-    };
-
-    chatboxInput.send = function() {
-        var text = this.value;
-        this.lastMessage = text;
-        this.value = "";
-        chatboxMessages.displayMessages(1000);
-        this.blur();
-        return text;
-    };
-
-    chatboxInput.enter = function() {
-    	if (chatbox.getAttribute("data-focus") == "true") {
-    		if (chatboxInput.value.length > 0) return chatboxInput.send();
-    		else chatboxInput.blur();
-    	}
-    	else {
-    		chatboxInput.focus();
-    	}
-    };
-
-    chatboxMessages.addMessage = function(msg,nickname,color,type) {
-        if (nickname == "") nickname = "Anonymous";
-        var msgDOM = document.createElement("div");
-        var nicknameDOM = document.createElement("span");
-        msgDOM.className = "message";
-        nicknameDOM.className = "nickname";
-        nicknameDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
-        if (type == 0) nicknameDOM.innerHTML = "[" + nickname + "]";
-        else if (type == 1) nicknameDOM.innerHTML = "&lt;" + nickname + "&gt;";
-        else if (type == 2) nicknameDOM.innerHTML = nickname;
-        msgDOM.innerHTML = nicknameDOM.outerHTML + msg.escapeHtml();
-        this.appendChild(msgDOM);
-        if (this.children.length > 8) this.removeChild(this.children[0]);
-        this.displayMessages(Math.min(6000 + msg.length*100,13000));
-    };
-
-    chatboxMessages.displayMessages = function(hideTimeout) {
-        chatbox.className = "displayMsg";
-        this.style.display = "block";
-        if (this.hideTimeout) clearTimeout(this.hideTimeout);
-        if (hideTimeout) {
-            if (chatbox.getAttribute("data-focus") != "true") this.hideTimeout = setTimeout(function(){chatbox.className="hideMsg";},hideTimeout);
-        }
-    };
-
-    chatboxMessages.onanimationended = function() {
-        if (chatbox.className == "hideMsg") {
-            this.style.display = "none";
-        }
-    };
-
-    chatboxMessages.addEventListener("animationend", chatboxMessages.onanimationended);
-    chatboxMessages.addEventListener("WebkitAnimationEnd", chatboxMessages.onanimationended);
-});

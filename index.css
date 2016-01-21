@@ -69,10 +69,12 @@ body {
     font-size: 0.95em;
     transition-duration: 600ms;
     z-index: 1;
+    border: 2px rgba(255,255,255,0) solid;
 }
 
 #chatbox.displayMsg[data-focus=true] {
     background-color: rgba(0,0,0,0.7);
+    border: 2px rgba(255,255,255,0.4) solid;
 }
 
 #chatbox.displayMsg {
@@ -94,6 +96,7 @@ body {
     width: calc(100% - 30px);
     color: white;
     font-family: Raleway;
+    padding-left: 4px;
 }
 
 #chatbox #chatboxMessages .message {
