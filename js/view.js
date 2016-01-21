@@ -17,7 +17,7 @@
 
 
 	var SMOOTH_TELEPORT = true;
-	var DEBUG = false;
+	var DEBUG = true;
 
 	var CAMERA_MAX = 7 / 8;
 	var CAMERA_MIN = 1 / 8;
@@ -134,6 +134,7 @@
 	    		return res;
 	    	}
 	    };
+	    this.graphics.grid.zIndex = -1;
 	    this.textures = {};
 	    this.sprites = {};
 	    this.compounds = {};
@@ -468,21 +469,13 @@
 			}
 
 
-			if (entity.type == 'Polygon') {
-				pos = rotatePoint(
-					b.state.pos.x + entity.textureCenter.x,
-					b.state.pos.y + entity.textureCenter.y,
-					b.state.angular.pos,
-					b.state.pos.x,
-					b.state.pos.y
-				);
-			}
-			else {
-				pos = {
-					x: b.state.pos.x,
-					y: b.state.pos.y
-				};
-			}
+			pos = rotatePoint(
+				b.state.pos.x + entity.textureOffset.x + entity.textureCenter.x,
+				b.state.pos.y + entity.textureOffset.y + entity.textureCenter.y,
+				b.state.angular.pos,
+				b.state.pos.x,
+				b.state.pos.y
+			);
 
 			container.sprites[entity.id].position.x = pos.x + positionDelta.x;
 			container.sprites[entity.id].position.y = pos.y + positionDelta.y;
@@ -533,8 +526,8 @@
 
 
 			pos = rotatePoint(
-				b.state.pos.x + entity.textureCenter.x,
-				b.state.pos.y + entity.textureCenter.y,
+				b.state.pos.x + entity.textureOffset.x + entity.textureCenter.x,
+				b.state.pos.y + entity.textureOffset.y + entity.textureCenter.y,
 				b.state.angular.pos,
 				b.state.pos.x,
 				b.state.pos.y
@@ -565,7 +558,7 @@
 
 		container.compounds[entity.id].graphics.entities.clear();
 
-		if (!entity.hiddenChildren) {
+		if (!entity.hiddenChildren || DEBUG) {
 			for (var idE in entity.children) {
 				if (entity.children[idE].type == "Compound") this.renderCompound(container[entity.id], entity.children[idE]);
 				else this.renderEntity(container.compounds[entity.id], entity.children[idE]);
