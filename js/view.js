@@ -17,7 +17,7 @@
 
 
 	var SMOOTH_TELEPORT = true;
-	var DEBUG = true;
+	var DEBUG = false;
 
 	var CAMERA_MAX = 7 / 8;
 	var CAMERA_MIN = 1 / 8;
@@ -29,8 +29,14 @@
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
 
-	//var MAX_ENTITY_DISTANCE = 2800;
 	var MAX_ENTITY_DISTANCE = 2800;
+
+	var ZINDEX = {
+		"entitiesOffset": 1,
+		"playerOffset": -1,
+		"nickname": 10,
+		"grid": -10
+	};
 
 	var KEYS = {
 		13: "ENTER",
@@ -134,7 +140,7 @@
 	    		return res;
 	    	}
 	    };
-	    this.graphics.grid.zIndex = -1;
+	    this.graphics.grid.zIndex = ZINDEX.grid;
 	    this.textures = {};
 	    this.sprites = {};
 	    this.compounds = {};
@@ -329,6 +335,12 @@
 					if (this.distFromEntity(this.world.entities[idE]) > MAX_ENTITY_DISTANCE && !this.world.entities[idE].player) {
 						this.world.removeEntity(idE);
 					}
+				}
+
+
+				// Update zIndex
+				if (this.tick % 120 == 30) {
+					this.refreshZIndex(this);
 				}
 			}
 
@@ -626,6 +638,13 @@
 			"compounds": {},
 			"PIXIContainer": PIXIContainer
 		};
+	    PIXIContainer.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
+		    this.children.sort(function(a,b) {
+		        a.zIndex = a.zIndex || 0;
+		        b.zIndex = b.zIndex || 0;
+		        return a.zIndex - b.zIndex
+		    });
+		};
 		PIXIContainer.addChild(container.compounds[compoundId].graphics.entities);
 		container.PIXIContainer.addChild(PIXIContainer);
 		if (container == this) this.stage.updateLayersOrder();
@@ -662,6 +681,7 @@
 		container.sprites[id] = new PIXI.Sprite(this.textures[texture]);
 		container.sprites[id].anchor.x = 0.5;
 		container.sprites[id].anchor.y = 0.5;
+		container.sprites[id].zIndex = this.world.entities[id].zIndex;
 		container.PIXIContainer.addChild(container.sprites[id]);
 		if (container == this) this.stage.updateLayersOrder;
 	};
@@ -679,6 +699,19 @@
 			this.stage.removeChild(this.sprites[entityId]);
 			delete this.sprites[entityId];
 		}
+	};
+
+
+
+	View.prototype.refreshZIndex = function(container) {
+		for (var idS in container.sprites) {
+			container.sprites[idS].zIndex = this.world.entities[idS].zIndex + ZINDEX.entitiesOffset;
+			if (this.world.entities[idS].player) container.sprites[idS].zIndex += ZINDEX.playerOffset;
+		}
+		for (var idC in container.compounds) {
+			this.refreshZIndex(container.compounds[idC]);
+		}
+		container.PIXIContainer.updateLayersOrder();
 	};
 
 
@@ -906,7 +939,7 @@
 			if (this.world.entities[this.players[idP].entityId]) {
 				if (this.players[idP].text == undefined) {
 					this.players[idP].text = new PIXI.Text(this.players[idP].nickname,STYLE_NICKNAME);
-					this.players[idP].text.zIndex = 1;
+					this.players[idP].text.zIndex = ZINDEX.nickname;
 					this.stage.addChild(this.players[idP].text);
 					this.stage.updateLayersOrder();
 				}

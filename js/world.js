@@ -22,7 +22,7 @@
 
 
 
-	var GROUND_DEPTH = 1500;
+	var GROUND_DEPTH = 200;
 
 
 
@@ -287,7 +287,7 @@
 		this.entitiesCount = worldJSON.entitiesCount || this.entitiesCount;
 
 		if (worldJSON.ground) {
-			try { this.generateGround(worldJSON.ground, worldJSON.groundTextures, worldJSON.type, worldJSON.groundDepth); } catch (e) { console.log(e); }
+			try { this.generateGround(worldJSON.ground, worldJSON.ground_textures, worldJSON.ground_textureOffsets, worldJSON.type, worldJSON.groundDepth); } catch (e) { console.log(e); }
 		}
 
 		this.updateEntities(worldJSON.entities);
@@ -296,7 +296,7 @@
 
 
 
-	World.prototype.generateGround = function(ground, textures, type, groundDepth) {
+	World.prototype.generateGround = function(ground, textures, textureOffsets, type, groundDepth) {
 		textures = (textures)?textures:[];
 		ground = (ground)?ground:[];
 		groundDepth = (groundDepth)?groundDepth:GROUND_DEPTH;
@@ -305,12 +305,19 @@
 
 		var createPart = function(pos, prevPos) {
 			if (type == "circular") {
+				var underPos = toAngleDist(pos);
+				underPos.dist -= GROUND_DEPTH;
+				underPos = toXY(underPos);
+				var underPrevPos = toAngleDist(prevPos);
+				underPrevPos.dist -= GROUND_DEPTH;
+				underPrevPos = toXY(underPrevPos);
 				return {
 					"type": "Polygon",
 					"vertices": [
-						{x: 0, y: 0},
 						{x: prevPos.x, y: prevPos.y},
-						{x: pos.x, y: pos.y}
+						{x: pos.x, y: pos.y},
+						{x: underPos.x, y: underPos.y},
+						{x: underPrevPos.x, y: underPrevPos.y}
 					],
 					"options": {
 						"treatment": "static",
@@ -337,7 +344,7 @@
 			}
 		};
 
-		var createCompound = function(children, texture, positions) {
+		var createCompound = function(children, texture, textureOffset, positions) {
 
 			var entity = world.addEntity({
 				"type": "Compound",
@@ -349,14 +356,17 @@
 				}
 			}, false);
 			if (texture) entity.texture = texture;
+			if (textureOffset) entity.textureOffset = textureOffset;
 
 			for (var idC in children) {
 				var child = Entity.new(children[idC]);
 				entity.addChild(child);
 				var b = entity.children[idC].physicsBody;
 				if (type == "circular") {
-					b.state.pos.x = b.state.pos.x - b.geometry.vertices[0].x;
-					b.state.pos.y = b.state.pos.y - b.geometry.vertices[0].y;
+					/*b.state.pos.x = b.state.pos.x - b.geometry.vertices[0].x;
+					b.state.pos.y = b.state.pos.y - b.geometry.vertices[0].y;*/
+					b.state.pos.x = b.state.pos.x - (b.geometry.vertices[0].x - positions[idC].x);
+					b.state.pos.y = b.state.pos.y - (b.geometry.vertices[0].y - positions[idC].y);
 				}
 				else if (type == "flat") {
 					b.state.pos.x = b.state.pos.x - (b.geometry.vertices[0].x - positions[idC].x);
@@ -386,13 +396,14 @@
 		var firstPos = null;
 		var children = [];
 		var texture = "";
+		var textureOffset = {};
 		var positions = [];
 		for (var idG in ground) {
-			if (children.length > 0) createCompound(children, texture, positions);
+			if (children.length > 0) createCompound(children, texture, textureOffset, positions);
 			var part = ground[idG];
 			children = [];
 			positions = [];
-			if (type == "flat") prevPos = null;
+			/*if (type == "flat") */prevPos = null;
 			for (var idP in part) {
 				if (type == "circular") {
 					var pos = rotatePoint(
@@ -402,6 +413,7 @@
 						0,
 						0
 					);
+					positions.push(pos);
 				}
 				else if (type == "flat") {
 					var pos = {
@@ -416,13 +428,14 @@
 				}
 
 				prevPos = pos;
-				if (!firstPos) firstPos = pos;
+				//if (!firstPos) firstPos = pos;
 			}
 			texture = textures[idG];
+			textureOffset = textureOffsets[idG];
 		}
 
-		if (type == "circular") children.push(createPart(firstPos, prevPos)); // Cycle the form
-		createCompound(children, texture, positions);
+		/*if (type == "circular") children.push(createPart(firstPos, prevPos)); // Cycle the form*/
+		createCompound(children, texture, textureOffset, positions);
 
 	};
 
