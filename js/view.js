@@ -19,6 +19,8 @@
 	var SMOOTH_TELEPORT = true;
 	var DEBUG = false;
 
+	var DEFAULT_BACKGROUND_COLOR = 0x202430;
+
 	var CAMERA_MAX = 7 / 8;
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
@@ -31,11 +33,16 @@
 
 	var MAX_ENTITY_DISTANCE = 2800;
 
+	var BG_DIVISIONS_SIZE = 512;
+
+	var BG_DEPTH = 0.3; // 0 ~ 1
+
 	var ZINDEX = {
 		"entitiesOffset": 1,
 		"playerOffset": -1,
 		"nickname": 10,
-		"grid": -10
+		"grid": -10,
+		"background": -500
 	};
 
 	var KEYS = {
@@ -102,11 +109,11 @@
 	 */
 	var View = function(world) {
 
-		if (document.location.href.split("?").length > 1 && document.location.href.split("?")[1].indexOf("Canvas") != -1)
-			this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
-		else this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		if (document.location.href.split("?").length > 1 && document.location.href.split("?")[1].indexOf("WebGL") != -1)
+			this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+		else this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
 		
-		this.renderer.backgroundColor = 0x202430;
+		this.renderer.backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	    document.body.appendChild(this.renderer.view);
 	    this.stage = new PIXI.Container();
 	    this.stage.position.x = this.renderer.width / 2;
@@ -145,9 +152,9 @@
 	    this.sprites = {};
 	    this.compounds = {};
 	    this.players = {};
+	    this.background = new PIXI.Container();
+	    this.background.zIndex = ZINDEX.background;
 	    this.entityFocusId = null;
-
-	    this.stage.addChild(this.graphics.entities);
 
 	    this.world = world;
 
@@ -259,6 +266,10 @@
 		this.textures = {};
 		this.sprites = {};
 		this.compounds = {};
+
+		this.stage.scale.x = 1;
+		this.stage.scale.y = 1;
+
 		var view = this;
 		if (this.entityFocusId != null) {
 			var prevEntityFocusId = this.entityFocusId;
@@ -270,14 +281,17 @@
 		this.renderEntityId = null;
 		this.graphics.clear();
 		this.stage.removeChildren();
+		this.moveCamera({x: 0, y: 0});
 
 		// Rebuild
 		var graphics = this.graphics.getAll();
 		for (var idG in graphics) {
 			this.stage.addChild(graphics[idG]);
 		}
+		this.stage.addChild(this.background);
 		this.world = world;
 		this.world.addEventListener("removeEntity", function(entityId) {view.removeSprite(entityId);});
+		this.getBackground(world.background.image);
 		this.world.physicsWorld.add(this.physicsRenderer);
 		this.world.physicsWorld.on('step', function() {
 			view.update();
@@ -286,6 +300,33 @@
 
 	View.prototype.setFocus = function(entityId) {
 		this.entityFocusId = entityId;
+	};
+
+	View.prototype.getBackground = function(background) {
+		var background = background || ((this.world) ? this.world.id : undefined);
+		if (background) {
+			var view = this;
+			ajax("getBackground", {"world": background}, function(bgData) {
+				view.background.removeChildren();
+				if (bgData.images.length != bgData.size.x * bgData.size.y) {
+					console.error("Mismatching number of images and size of background : " + bgData.images.length + " and " + (bgData.size.x * bgData.size.y));
+				}
+				else {
+					var divisionSize = view.world.background.divisionSize || BG_DIVISIONS_SIZE;
+					var count = 0;
+					var boundaryX = bgData.size.x * (divisionSize / 2) - (divisionSize / 2);
+					var boundaryY = bgData.size.y * (divisionSize / 2) - (divisionSize / 2);
+					for (var j = -boundaryY ; j <= boundaryY ; j += divisionSize) {
+						for (var i = -boundaryX ; i <= boundaryX ; i += divisionSize) {
+							var sprite = new PIXI.Sprite.fromImage("./img/worlds/" + background + "/background/" + bgData.images[count++]);
+							sprite.position.x = i;
+							sprite.position.y = j;
+							view.background.addChild(sprite);
+						}
+					}
+				}
+			});
+		}
 	};
 
 	/**
@@ -344,8 +385,16 @@
 				}
 			}
 
+			var cameraPos = this.getCameraPosition();
+			var depth = (this.world.backgroundDepth != null && this.world.backgroundDepth != undefined) ? this.world.background.depth : BG_DEPTH;
+			this.background.position.x = cameraPos.x * depth;
+			this.background.position.y = cameraPos.y * depth;
+
 			this.refreshCamera();
 			this.refreshPlayersNickname();
+
+			if (this.world.background.color != null && this.world.background.color != undefined) this.renderer.backgroundColor = parseInt(this.world.background.color);
+			else this.renderer.backgroundColor = DEFAULT_BACKGROUND_COLOR;
 
 
 			this.renderer.render(this.stage);
@@ -446,7 +495,7 @@
 
 			}
 
-			else if (entity.type == 'Polygon') { // Mettre un compteur pour calculer le temps passé à dessiner ?
+			else if (entity.type == 'Polygon') {
 
 				if (b.geometry.vertices[0]) {
 					pos = rotatePoint(
@@ -480,19 +529,21 @@
 				container.sprites[entity.id].scale = entity.textureScale;
 			}
 
+			pos = entity.getPos();
+			angle = entity.getAngle();
 
 			pos = rotatePoint(
-				b.state.pos.x + entity.textureOffset.x + entity.textureCenter.x,
-				b.state.pos.y + entity.textureOffset.y + entity.textureCenter.y,
-				b.state.angular.pos,
-				b.state.pos.x,
-				b.state.pos.y
+				pos.x + entity.textureOffset.x + entity.textureCenter.x,
+				pos.y + entity.textureOffset.y + entity.textureCenter.y,
+				angle,
+				pos.x,
+				pos.y
 			);
 
 			container.sprites[entity.id].position.x = pos.x + positionDelta.x;
 			container.sprites[entity.id].position.y = pos.y + positionDelta.y;
 
-			container.sprites[entity.id].rotation = b.state.angular.pos + angleDelta;
+			container.sprites[entity.id].rotation = angle + angleDelta;
 
 			if (DEBUG) container.sprites[entity.id].alpha = 0.5;
 			else container.sprites[entity.id].alpha = 1;
@@ -507,7 +558,7 @@
 	 */
 	View.prototype.renderCompound = function(container, entity) {
 		if (!container.compounds[entity.id]) this.defineCompound(container, entity.id);
-
+		
 
 		var entityST = false;
 		var angleDelta = 0;
@@ -536,18 +587,20 @@
 				container.sprites[entity.id].scale = entity.textureScale;
 			}
 
+			pos = entity.getPos();
+			angle = entity.getAngle();
 
 			pos = rotatePoint(
-				b.state.pos.x + entity.textureOffset.x + entity.textureCenter.x,
-				b.state.pos.y + entity.textureOffset.y + entity.textureCenter.y,
-				b.state.angular.pos,
-				b.state.pos.x,
-				b.state.pos.y
+				pos.x + entity.textureOffset.x + entity.textureCenter.x,
+				pos.y + entity.textureOffset.y + entity.textureCenter.y,
+				angle,
+				pos.x,
+				pos.y
 			);
 			container.sprites[entity.id].position.x = pos.x + positionDelta.x;
 			container.sprites[entity.id].position.y = pos.y + positionDelta.y;
 
-			container.sprites[entity.id].rotation = b.state.angular.pos + angleDelta;
+			container.sprites[entity.id].rotation = angle + angleDelta;
 
 			if (DEBUG) container.sprites[entity.id].alpha = 0.5;
 			else container.sprites[entity.id].alpha = 1;
@@ -891,19 +944,26 @@
 		if (this.world) {
 			var cPos = this.getCameraPosition();
 
-			var dx = entity.physicsBody.state.pos.x - cPos.x;
-			var dy = entity.physicsBody.state.pos.y - cPos.y;
+			var ePos = entity.getPos();
 
-			var aabbEntity = entity.physicsBody.aabb();
+			var dx = ePos.x - cPos.x;
+			var dy = ePos.y - cPos.y;
 
-			var aabbdx = (aabbEntity.x - aabbEntity.hw * Math.sign(dx)) - (cPos.x);
-			var aabbdy = (aabbEntity.y - aabbEntity.hh * Math.sign(dy)) - (cPos.y);
+			if (entity.type == "Decoration") {
+				return Math.sqrt(dx * dx + dy * dy);
+			}
+			else {
+				var aabbEntity = entity.physicsBody.aabb();
 
-			if (aabbdx * Math.sign(dx) < 0 && aabbdy * Math.sign(dy) < 0) return 0;
-			else if (aabbdx * Math.sign(dx) < 0) return Math.abs(aabbdy);
-			else if (aabbdy * Math.sign(dy) < 0) return Math.abs(aabbdx);
+				var aabbdx = (aabbEntity.x - aabbEntity.hw * Math.sign(dx)) - (cPos.x);
+				var aabbdy = (aabbEntity.y - aabbEntity.hh * Math.sign(dy)) - (cPos.y);
 
-			return Math.sqrt(aabbdx * aabbdx + aabbdy * aabbdy);
+				if (aabbdx * Math.sign(dx) < 0 && aabbdy * Math.sign(dy) < 0) return 0;
+				else if (aabbdx * Math.sign(dx) < 0) return Math.abs(aabbdy);
+				else if (aabbdy * Math.sign(dy) < 0) return Math.abs(aabbdx);
+
+				return Math.sqrt(aabbdx * aabbdx + aabbdy * aabbdy);
+			}
 		}
 	};
 
@@ -1021,6 +1081,28 @@
 				dist: 0
 			};
 		}
+	}
+
+	function ajax(action, params, callback) {
+		var xmlhttp;
+		if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
+		  xmlhttp = new XMLHttpRequest();
+		}
+		else { // code for IE6, IE5
+			xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange=function() {
+			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+				callback(JSON.parse(xmlhttp.responseText));
+			}
+		}
+		var sParams = "";
+		for (var id in params) {
+			sParams += "&" + id + "=" + params[id];
+		}
+		sParams = sParams.substr(1);
+		xmlhttp.open("GET", "./query/" + action + ".php?" + sParams, true);
+		xmlhttp.send();
 	}
 
 
