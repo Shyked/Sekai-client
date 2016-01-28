@@ -2,6 +2,7 @@
 
 	var Worlds = window.Worlds;
 	var Chatbox = window.Chatbox;
+	var Player = window.Player;
 
 	var LAG = 0;
 	var RAND_LAG = 0;
@@ -16,12 +17,15 @@
 
 		this.socket = io.connect(NODE_URL);
 
-		this.playerId = null;
-		this.nickname = null;
+		this.player = new Player();
 
-		this.playerParams = {
+		/*this.playerId = null;
+		this.nickname = null;
+		this.world = null;*/
+
+		/*this.playerParams = {
 			"jumpPower": 0
-		}
+		};*/
 
 		var that = this;
 		this.socket.on('askNickname',function(content){setTimeout(function(){ that.askNickname(content) },Math.random()*RAND_LAG+LAG)});
@@ -69,20 +73,20 @@
 	};
 
 	Synchronizer.prototype.askNickname = function(content) {
-		if (this.nickname === null) {
+		if (this.player.nickname === null) {
 			document.getElementById('blackContainer').style.display = "block";
 			document.getElementById('nicknameInput').focus();
 			var synchronizer = this;
 			document.getElementById('nicknameForm').onsubmit = function() {
 				if (this.nickname.value != "") {
-					synchronizer.nickname = this.nickname.value;
+					synchronizer.player.nickname = this.nickname.value;
 					synchronizer.socket.emit('nickname', JSON.stringify(this.nickname.value));
 				}
 				return false;
 			}
 		}
 		else {
-			this.socket.emit('nickname', JSON.stringify(this.nickname));
+			this.socket.emit('nickname', JSON.stringify(this.player.nickname));
 		}
 	};
 
@@ -102,7 +106,8 @@
 		}
 
 		this.view.stopRender();
-		if (this.world) Worlds.delete(this.world.id);
+		if (this.player.world) Worlds.delete(this.player.world.id);
+		this.player.clear();
 
 		var worldJSON = JSON.parse(content);
 		this.view.players = worldJSON.players;
@@ -110,7 +115,8 @@
 		var world = Worlds.new(worldJSON.id);
 		world.update(worldJSON);
 
-		this.world = world;
+		this.player.world = world;
+		this.player.world.gamemode.params = worldJSON.gamemode.params;
 
 		this.view.attachWorld(world);
 		this.view.startRender();
@@ -129,18 +135,17 @@
 		var worldJSON = JSON.parse(content);
 		var world = Worlds.get(worldJSON.id);
 		if (world) {
-			if (worldJSON.entities[this.playerId]) delete worldJSON.entities[this.playerId];
 			world.update(worldJSON);
 		}
 	};
 
 	Synchronizer.prototype.definePlayer = function(content) {
 		var playerParams = JSON.parse(content);
-		this.world.updateEntities([playerParams.entity]);
+		this.player.world.updateEntities([playerParams.entity]);
 		this.view.setFocus(playerParams.entity.id);
-		this.playerId = playerParams.entity.id;
-		this.playerParams.jumpPower = playerParams.jumpPower;
-		this.playerParams.speed = playerParams.speed;
+		this.player.entity = this.player.world.entities[playerParams.entity.id];
+		/*this.playerParams.jumpPower = playerParams.jumpPower;
+		this.playerParams.speed = playerParams.speed;*/
 		//this.world.softUpdates[playerParams.entityId] = true;
 	};
 
@@ -151,16 +156,16 @@
 	 * @param content The JSON String containing the entity
 	 */
 	Synchronizer.prototype.entity = function(content) {
-		var entity = JSON.parse(content)
-		if (entity.id != this.playerId)	this.world.updateEntities([entity]);
+		var entity = JSON.parse(content);
+		if (entity != this.player.entity) this.player.world.updateEntities([entity]);
 	};
 
 	Synchronizer.prototype.removeEntity = function(content) {
-		this.world.removeEntity(JSON.parse(content));
+		this.player.world.removeEntity(JSON.parse(content));
 	};
 
 	Synchronizer.prototype.error = function(content) {
-		console.log("Error from the server : " + JSON.parse(content));
+		console.warn("Error from the server : " + JSON.parse(content));
 	};
 
 
@@ -170,32 +175,31 @@
 	};
 
 	Synchronizer.prototype.keyDown = function(key) {
-		if (this.playerId) {
-			if (key == "R") this.socket.emit('restartWorld', "");
-			else if ((key == "ENTER" || key == "/") && Chatbox) {
+		if (this.player.entity) {
+			// if (key == "R") this.socket.emit('restartWorld', "");
+
+			// If client-sided command
+			if ((key == "ENTER" || key == "/") && Chatbox) {
 				Chatbox.enter();
 			}
+
+			// If not, send the key to the server
 			else {
 				this.socket.emit('keydown', JSON.stringify({
 					"key": key,
-					"entity": this.world.entities[this.playerId].export()
+					"entity": this.player.entity.export()
 				}));
+				this.player.keyDown(key);
 			}
-			if (key == "Z" || key == "UP") this.jump();
-			else if (key == "Q" || key == "LEFT") this.roll("left");
-			else if (key == "D" || key == "RIGHT") this.roll("right");
 		}
 	};
 	Synchronizer.prototype.keyUp = function(key) {
-		if (this.playerId) {
-			if (this.world.entities[this.playerId]) {
-				this.socket.emit('keyup', JSON.stringify({
-					"key": key,
-					"entity": this.world.entities[this.playerId].export()
-				}));
-				if (key == "Q" || key == "LEFT") this.stopRoll("left");
-				else if (key == "D" || key == "RIGHT") this.stopRoll("right");
-			}
+		if (this.player.entity) {
+			this.socket.emit('keyup', JSON.stringify({
+				"key": key,
+				"entity": this.player.entity.export()
+			}));
+			this.player.keyUp(key);
 		}
 	};
 
@@ -204,11 +208,11 @@
 	};
 
 	Synchronizer.prototype.sendPlayer = function() {
-		if (this.world) {
-			var player = this.world.entities[this.playerId];
+		if (this.player.world) {
+			var player = this.player.entity;
 			if (player) {
 				this.socket.emit('player', JSON.stringify({
-					"worldId": this.world.id,
+					"worldId": this.player.world.id,
 					"player": player.export()
 				}));
 			}
@@ -245,10 +249,12 @@
 
 
 
-	Synchronizer.prototype.jump = function() {
+	/*Synchronizer.prototype.jump = function() {
 		if (this.playerId) {
 
-			var entity = this.world.entities[this.playerId];
+			var entity = this.player.entity;
+			entity.jump = this.playerParams.jumpPower;
+
 			var vel;
 
 			if (this.world.type == "circular") {
@@ -291,7 +297,12 @@
 			entity.physicsBody.sleep(false);
 
 			entity.move = {
-				side: side,
+				direction: {
+					top: false,
+					left: false,
+					bottom: false,
+					right: false
+				},
 				speed: this.playerParams.speed
 			};
 		}
@@ -307,7 +318,7 @@
 				entity.move = null;
 			}
 		}
-	};
+	};*/
 
 
 

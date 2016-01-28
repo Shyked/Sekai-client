@@ -59,9 +59,9 @@ var Chatbox = function() {
 
     this.chatbox = document.createElement('div');
     this.chatbox.id = "chatbox";
-    this.chatbox.innerHTML =   '<div id="chatboxMessages"></div>'
-                        + '<span class="preInput">&gt;</span>'
-                        + '<input id="chatboxInput" type="text" value="" maxlength="300" />';
+    this.chatbox.innerHTML =  '<div id="chatboxMessages"></div>'
+                            + '<span class="preInput">&gt;</span>'
+                            + '<input id="chatboxInput" type="text" value="" maxlength="300" />';
 
     document.body.appendChild(this.chatbox);
 
@@ -172,16 +172,26 @@ Chatbox.prototype.enter = function() {
 
 
 Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
-    if (nickname == "") nickname = "Anonymous";
+    if (nickname == "" && type != 2) nickname = "Anonymous";
     var msgDOM = document.createElement("div");
-    var nicknameDOM = document.createElement("span");
     msgDOM.className = "message";
-    nicknameDOM.className = "nickname";
-    nicknameDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
-    if (type == 0) nicknameDOM.innerHTML = "[" + nickname + "]";
-    else if (type == 1) nicknameDOM.innerHTML = "&lt;" + nickname + "&gt;";
-    else if (type == 2) nicknameDOM.innerHTML = nickname;
-    msgDOM.innerHTML = nicknameDOM.outerHTML + msg.escapeHtml();
+    if (type == 2) {
+        msgDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+        msgDOM.style.fontWeight = "bold";
+
+        msgDOM.innerHTML = msg.escapeHtml();
+    }
+    else {
+        var nicknameDOM = document.createElement("span");
+        nicknameDOM.className = "nickname";
+        nicknameDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+
+        if (type == 0) nicknameDOM.innerHTML = "[" + nickname + "]";
+        else if (type == 1) nicknameDOM.innerHTML = "&lt;" + nickname + "&gt;";
+
+        msgDOM.innerHTML = nicknameDOM.outerHTML + msg.escapeHtml();
+    }
+
     this.chatboxMessages.appendChild(msgDOM);
     if (this.chatboxMessages.children.length > 8) this.chatboxMessages.removeChild(this.chatboxMessages.children[0]);
     this.displayMessages(Math.min(6000 + msg.length*100, 13000));
