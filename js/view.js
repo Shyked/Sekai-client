@@ -728,15 +728,48 @@
 	 * Creates a Sprite object
 	 */
 	View.prototype.newSprite = function(container, id, texture) {
-		if (!this.textures[texture]) {
-			this.textures[texture] = PIXI.Texture.fromImage('./img/textures/' + texture + '.png');
+
+		var view = this;
+		function initSprite() {
+			container.sprites[id].texture = view.textures[texture];
+			container.sprites[id].anchor.x = 0.5;
+			container.sprites[id].anchor.y = 0.5;
+			container.sprites[id].zIndex = view.world.entities[id].zIndex;
+			container.PIXIContainer.addChild(container.sprites[id]);
+			if (container == this) view.stage.updateLayersOrder;
 		}
-		container.sprites[id] = new PIXI.Sprite(this.textures[texture]);
-		container.sprites[id].anchor.x = 0.5;
-		container.sprites[id].anchor.y = 0.5;
-		container.sprites[id].zIndex = this.world.entities[id].zIndex;
-		container.PIXIContainer.addChild(container.sprites[id]);
-		if (container == this) this.stage.updateLayersOrder;
+
+		if (this.textures[texture] == null || this.textures[texture] == undefined) {
+			this.textures[texture] = PIXI.Texture.EMPTY;
+			container.sprites[id] = new PIXI.Sprite(view.textures[texture]);
+			ajax("imageExists", {
+				"world": this.world.id,
+				"image": texture,
+			}, function (response) {
+				if (response == "true") {
+					view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/' + view.world.id + '/textures/' + texture + '.png');
+					initSprite();
+				}
+				else {
+					ajax("imageExists", {
+						"world": "global",
+						"image": texture
+					}, function (response) {
+						if (response == "true") {
+							view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/global/textures/' + texture + '.png');
+							initSprite();
+						}
+						else {
+							console.error("Texture not found : " + texture);
+						}
+					});
+				}
+			});
+		}
+		else {
+			container.sprites[id] = new PIXI.Sprite(view.textures[texture]);
+			initSprite();
+		}
 	};
 
 	/**
@@ -1086,7 +1119,7 @@
 	function ajax(action, params, callback) {
 		var xmlhttp;
 		if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
-		  xmlhttp = new XMLHttpRequest();
+			xmlhttp = new XMLHttpRequest();
 		}
 		else { // code for IE6, IE5
 			xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
