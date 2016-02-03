@@ -280,7 +280,7 @@
 			document.getElementById('touchFullscreen').ontouchstart = function() { touchStart("FULLSCREEN", this); };
 			document.getElementById('touchFullscreen').ontouchend = function() { touchEnd("FULLSCREEN", this); };
 			
-			document.getElementById('chatbox').style.top = "10px";
+			document.getElementById('chatbox').style.top = "30px";
 			document.getElementById('chatbox').style.bottom = "initial";
 			document.getElementById('chatboxInput').style.marginBottom = "5px";
 			var firstChild = document.getElementById('chatbox').firstChild;
