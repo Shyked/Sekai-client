@@ -29,6 +29,11 @@ if (isset($_GET["world"]) && preg_match("/^([^\/\?\:\\\"\<\>\*\|]+)$/", $_GET["w
 	$folder = "../img/worlds/" . $_GET["world"] . "/background/";
 	$imgs = getFolderImages($folder);
 	if (sizeof($imgs) > 0) {
+		asort($imgs);
+		$imgsSort = array();
+		foreach ($imgs as $val) {
+			array_push($imgsSort, $val);
+		}
 		$filename = "background.json";
 		if (file_exists($folder . $filename)) {
 			$file = fopen($folder . $filename,"r");
@@ -36,7 +41,7 @@ if (isset($_GET["world"]) && preg_match("/^([^\/\?\:\\\"\<\>\*\|]+)$/", $_GET["w
 			fclose($file);
 			$bgData = json_decode($json);
 			if (isset($bgData->size)) {
-				$bgData->images = $imgs;
+				$bgData->images = $imgsSort;
 				header("Content-type: application/json");
 				echo json_encode($bgData);
 			}
