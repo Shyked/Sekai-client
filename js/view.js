@@ -25,8 +25,8 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	//var ZOOM_MIN = 0.6;
-	var ZOOM_MIN = 0.05;
+	var ZOOM_MIN = 0.6;
+	//var ZOOM_MIN = 0.05;
 	var ZOOM_MAX = 1.8;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
@@ -38,8 +38,8 @@
 	var BG_DEPTH = 0.3; // 0 ~ 1
 
 	var ZINDEX = {
-		"entitiesOffset": 1,
-		"playerOffset": -1,
+		"entitiesOffset": 0.1,
+		"playerOffset": -0.1,
 		"nickname": 10,
 		"grid": -10,
 		"background": -500
@@ -90,7 +90,19 @@
 		105: "9",
 		107: "+",
 		109: "-",
-		111: "/"
+		111: "/",
+		112: "F1",
+		113: "F2",
+		114: "F3",
+		115: "F4",
+		116: "F5",
+		117: "F6",
+		118: "F7",
+		119: "F8",
+		120: "F9",
+		121: "F10",
+		122: "F11",
+		123: "F12"
 	};
 
 	var STYLE_NICKNAME = {
@@ -148,6 +160,7 @@
 	    	}
 	    };
 	    this.graphics.grid.zIndex = ZINDEX.grid;
+	    this.loadingTextures = {};
 	    this.textures = {};
 	    this.sprites = {};
 	    this.compounds = {};
@@ -192,29 +205,52 @@
 	    	mousewheel: [],
 
 	    	keydown: [],
-	    	keyup: []
+	    	keyup: [],
+
+	    	touchstart: [],
+	    	touchmove: [],
+	    	touchend: []
 	    };
 	    var view = this;
 	    // Mouse events
 	    this.renderer.view.onmousedown = function(e) {
 	    	if (Chatbox) Chatbox.blur();
-	    	if (e.button == 0) view.triggerEvent('mouseleftdown',e);
-	    	else if (e.button == 1) view.triggerEvent('mousemiddledown',e);
-	    	else if (e.button == 2) view.triggerEvent('mouserightdown',e);
+	    	if (e.button == 0) view.triggerEvent('mouseleftdown', e);
+	    	else if (e.button == 1) view.triggerEvent('mousemiddledown', e);
+	    	else if (e.button == 2) view.triggerEvent('mouserightdown', e);
 	    };
 	    this.renderer.view.onmouseup = function(e) {
-	    	if (e.button == 0) view.triggerEvent('mouseleftup',e);
-	    	else if (e.button == 1) view.triggerEvent('mousemiddleup',e);
-	    	else if (e.button == 2) view.triggerEvent('mouserightup',e);
+	    	if (e.button == 0) view.triggerEvent('mouseleftup', e);
+	    	else if (e.button == 1) view.triggerEvent('mousemiddleup', e);
+	    	else if (e.button == 2) view.triggerEvent('mouserightup', e);
 	    };
 	    this.renderer.view.onmousemove = function(e) {
-	    	if (e.buttons == 0) view.triggerEvent('mouseleftmove',e);
-	    	else if (e.buttons == 4) view.triggerEvent('mousemiddlemove',e);
-	    	else if (e.buttons == 2) view.triggerEvent('mouserightmove',e);
+	    	if (e.buttons == 0) view.triggerEvent('mouseleftmove', e);
+	    	else if (e.buttons == 4) view.triggerEvent('mousemiddlemove', e);
+	    	else if (e.buttons == 2) view.triggerEvent('mouserightmove', e);
 	    };
 	    this.renderer.view.onmousewheel = function(e) {
-	    	view.triggerEvent('mousewheel',e);
+	    	view.triggerEvent('mousewheel', e);
 	    };
+	    this.renderer.view.ontouchstart = function(e) {
+	    	view.triggerEvent('touchstart', e);
+	    	e.preventDefault();
+	    	return false;
+	    };
+	    this.renderer.view.ontouchmove = function(e) {
+	    	view.triggerEvent('touchmove', e);
+	    	e.preventDefault();
+	    	return false;
+	    };
+	    this.renderer.view.ontouchend = function(e) {
+	    	view.triggerEvent('touchend', e);
+	    	e.preventDefault();
+	    	return false;
+	    };
+	    window.ontouchmove = function(e) {
+	    	e.preventDefault();
+	    	return false;
+	    }
 
 	    this.addEventListener('mouserightdown', view.mouseRightDown);
 	    this.addEventListener('mouserightup', view.mouseRightUp);
@@ -248,10 +284,28 @@
 	    document.body.oncontextmenu = function(e) { return false; };
 
 	    window.onresize = function(e) {
-	    	view.renderer.resize(window.innerWidth, window.innerHeight);
+	    	var zoom = (document.body.style.zoom) ? document.body.style.zoom : 1;
+	    	view.renderer.resize(window.innerWidth / zoom, window.innerHeight / zoom);
 	    	view.moveCamera({x: 0, y: 0}, true);
 	    };
 
+	};
+
+	View.prototype.clear = function() {
+		if (this.world) this.world.resetEventListener("removeEntity");
+		this.textures = {};
+		this.sprites = {};
+		this.compounds = {};
+	    this.players = {};
+
+		this.stage.scale.x = 1;
+		this.stage.scale.y = 1;
+
+		this.entityFocusId = null;
+		this.renderEntityId = null;
+		this.graphics.clear();
+		this.stage.removeChildren();
+		this.moveCamera({x: 0, y: 0});
 	};
 
 	/**
@@ -262,26 +316,7 @@
 	 */
 	View.prototype.attachWorld = function(world) {
 		// Clear everything
-		if (this.world) this.world.resetEventListener("removeEntity");
-		this.textures = {};
-		this.sprites = {};
-		this.compounds = {};
-
-		this.stage.scale.x = 1;
-		this.stage.scale.y = 1;
-
-		var view = this;
-		if (this.entityFocusId != null) {
-			var prevEntityFocusId = this.entityFocusId;
-			setTimeout(function(){
-				if (view.entityFocusId == null && view.world == world) view.entityFocusId = prevEntityFocusId;
-			},1000)
-		}
-		this.entityFocusId = null;
-		this.renderEntityId = null;
-		this.graphics.clear();
-		this.stage.removeChildren();
-		this.moveCamera({x: 0, y: 0});
+		this.clear();
 
 		// Rebuild
 		var graphics = this.graphics.getAll();
@@ -290,6 +325,7 @@
 		}
 		this.stage.addChild(this.background);
 		this.world = world;
+		var view = this;
 		this.world.addEventListener("removeEntity", function(entityId) {view.removeSprite(entityId);});
 		this.getBackground(world.background.image);
 		this.world.physicsWorld.add(this.physicsRenderer);
@@ -378,15 +414,15 @@
 					}
 				}
 
+			}
 
-				// Update zIndex
-				if (this.tick % 120 == 30) {
-					this.refreshZIndex(this);
-				}
+			// Update zIndex
+			if (this.tick % 120 == 30) {
+				this.refreshZIndex(this);
 			}
 
 			var cameraPos = this.getCameraPosition();
-			var depth = (this.world.backgroundDepth != null && this.world.backgroundDepth != undefined) ? this.world.background.depth : BG_DEPTH;
+			var depth = (this.world.background.depth != null && this.world.background.depth != undefined) ? this.world.background.depth : BG_DEPTH;
 			this.background.position.x = cameraPos.x * depth;
 			this.background.position.y = cameraPos.y * depth;
 
@@ -700,7 +736,8 @@
 		};
 		PIXIContainer.addChild(container.compounds[compoundId].graphics.entities);
 		container.PIXIContainer.addChild(PIXIContainer);
-		if (container == this) this.stage.updateLayersOrder();
+		// if (container == this) this.stage.updateLayersOrder();
+		container.PIXIContainer.updateLayersOrder();
 	};
 
 
@@ -730,45 +767,54 @@
 	View.prototype.newSprite = function(container, id, texture) {
 
 		var view = this;
-		function initSprite() {
-			container.sprites[id].texture = view.textures[texture];
-			container.sprites[id].anchor.x = 0.5;
-			container.sprites[id].anchor.y = 0.5;
-			container.sprites[id].zIndex = view.world.entities[id].zIndex;
-			container.PIXIContainer.addChild(container.sprites[id]);
-			if (container == this) view.stage.updateLayersOrder;
+		function initSprite(sprites) {
+			for (var idS in sprites) {
+				sprites[idS].sprite.texture = view.textures[texture];
+				sprites[idS].sprite.anchor.x = 0.5;
+				sprites[idS].sprite.anchor.y = 0.5;
+				sprites[idS].sprite.zIndex = view.world.entities[sprites[idS].id].zIndex;
+				sprites[idS].container.PIXIContainer.addChild(sprites[idS].sprite);
+				sprites[idS].container.PIXIContainer.updateLayersOrder();
+			}
+			if (view.loadingTextures[texture]) delete view.loadingTextures[texture];
 		}
 
 		if (this.textures[texture] == null || this.textures[texture] == undefined) {
+			this.loadingTextures[texture] = [];
 			this.textures[texture] = PIXI.Texture.EMPTY;
 			container.sprites[id] = new PIXI.Sprite(view.textures[texture]);
-			ajax("imageExists", {
+			this.loadingTextures[texture].push({
+				"sprite": container.sprites[id],
+				"container": container,
+				"id": id
+			});
+			ajax("getImagePath", {
 				"world": this.world.id,
 				"image": texture,
 			}, function (response) {
-				if (response == "true") {
-					view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/' + view.world.id + '/textures/' + texture + '.png');
-					initSprite();
+				if (response !== "") {
+					view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/' + response + '/textures/' + texture + '.png');
+					initSprite(view.loadingTextures[texture]);
 				}
 				else {
-					ajax("imageExists", {
-						"world": "global",
-						"image": texture
-					}, function (response) {
-						if (response == "true") {
-							view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/global/textures/' + texture + '.png');
-							initSprite();
-						}
-						else {
-							console.error("Texture not found : " + texture);
-						}
-					});
+					console.error("Texture not found : " + texture);
 				}
 			});
 		}
 		else {
 			container.sprites[id] = new PIXI.Sprite(view.textures[texture]);
-			initSprite();
+			if (view.textures[texture] == PIXI.Texture.EMPTY) {
+				this.loadingTextures[texture].push({
+					"sprite": container.sprites[id],
+					"container": container,
+					"id": id
+				});
+			}
+			else initSprite([{
+				"sprite": container.sprites[id],
+				"container": container,
+				"id": id
+			}]);
 		}
 	};
 
@@ -965,7 +1011,52 @@
 		else if (key == "0") {
 			view.zoom(1, false);
 		}
+		/*else if (key == "F9") {
+			view.fullscreen();
+		}*/
 	};
+
+	View.prototype.fullscreen = function() {
+		if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement) {
+			var DOM = document.body;
+			if (DOM.webkitRequestFullscreen) {
+				DOM.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+			}
+			else if (DOM.mozRequestFullScreen) {
+				DOM.mozRequestFullScreen();
+			}
+			else if (DOM.requestFullscreen) {
+				DOM.requestFullscreen();
+			}
+			document.body.style.zoom = "0.6";
+		}
+		else {
+			if (document.exitFullscreen) {
+				document.exitFullscreen();
+			}
+			else if (document.mozCancelFullScreen) {
+				document.mozCancelFullScreen();
+			}
+			else if (document.webkitCancelFullScreen) {
+				document.webkitCancelFullScreen();
+			}
+			document.body.style.zoom = "";
+		}
+	};
+
+	View.prototype.hideAddressBar = function() {
+		if(!window.location.hash) {
+			window.Chatbox.addMessage(String(this.renderer.view.offsetHeight) + " " + String(document.body.clientHeight)
+				 + " " + String(window.outerHeight), "Debug", {r: 200, g: 50, b: 50}, 1);
+			if(document.height < window.outerHeight || true) {
+				// document.body.style.height = (window.outerHeight + 50) + 'px';
+				this.renderer.resize(window.innerWidth, window.innerHeight + 50);
+			}
+			setTimeout( function() { window.scrollTo(0, 50); }, 50);
+		}
+	};
+
+
 
 
 

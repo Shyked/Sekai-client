@@ -8,6 +8,7 @@
 			}
 		</style>
 		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width; initial-scale=0.6; maximum-scale=0.6; user-scalable=0;">
 	</head>
 	<body>
 		<script src="./socket.io-client/socket.io.js"></script>
@@ -17,6 +18,9 @@
 		<script src="./js/onload.js"></script>
 		<script src="./js/modulo.js"></script>
 		<script src="./js/player.js"></script>
+		<script src="./js/audioPlayer.js"></script>
+		<script src="./js/fileLoader.js"></script>
+		<script src="./js/interface.js"></script>
 		<script src="./js/gamemodes.js"></script>
 		<script src="./js/chatbox.js"></script>
 		<script src="./js/entity.js"></script>
@@ -24,7 +28,6 @@
 		<script src="./js/view.js"></script>
 		<script src="./js/synchronizer.js"></script>
 		<script src="./index.js"></script>
-		<script src="./js/performance.js"></script>
 
 		<link rel="stylesheet" href="./index.css"/>
 
@@ -37,6 +40,24 @@
 					<input id="nicknameInput" name="nickname" type="text" maxlength="25"/>
 				</form>
 			</div>
+			<div id="loadingContainer">
+				<div id="loadingLabel">Entering the world...</div>
+				<div id="loadingBarContainer">
+					<div id="loadingBar"></div>
+				</div>
+			</div>
+		</div>
+
+		<div id="touchContainer">
+			<div id="touchUp"></div>
+			<div id="touchLeft"></div>
+			<div id="touchDown"></div>
+			<div id="touchRight"></div>
+
+			<div id="touchAction1"></div>
+			<div id="touchAction2"></div>
+				
+			<div id="touchFullscreen"></div>
 		</div>
 		
 	</body>

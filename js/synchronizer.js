@@ -3,6 +3,9 @@
 	var Worlds = window.Worlds;
 	var Chatbox = window.Chatbox;
 	var Player = window.Player;
+	var AudioPlayer = window.AudioPlayer;
+	var FileLoader = window.FileLoader;
+	var Interface = window.Interface;
 
 	var LAG = 0;
 	var RAND_LAG = 0;
@@ -19,13 +22,6 @@
 
 		this.player = new Player();
 
-		/*this.playerId = null;
-		this.nickname = null;
-		this.world = null;*/
-
-		/*this.playerParams = {
-			"jumpPower": 0
-		};*/
 
 		var that = this;
 		this.socket.on('askNickname',function(content){setTimeout(function(){ that.askNickname(content) },Math.random()*RAND_LAG+LAG)});
@@ -38,6 +34,7 @@
 		this.socket.on('definePlayer',function(content){setTimeout(function(){ that.definePlayer(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('error',function(content){setTimeout(function(){ that.error(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('chatboxMessage',function(content){setTimeout(function(){ that.chatboxMessage(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('audio',function(content){setTimeout(function(){ that.audio(content) },Math.random()*RAND_LAG+LAG)});
 
 
 		// User inputs
@@ -58,12 +55,17 @@
 	    view.addEventListener('keyup', function(view, key) {
 	    	Synchronizer.keyUp(key);
 	    });
+	    view.addEventListener('touchstart', function(view, e) {
+	    	Synchronizer.touchStart(e);
+	    });
 
 
 	    Chatbox.addEventListener('send', function(chatbox, text) {
 	    	Synchronizer.sendChatboxMessage(text);
 	    });
 
+
+	    this.sendParams();
 
 
 
@@ -72,18 +74,38 @@
 
 	};
 
+	Synchronizer.prototype.sendParams = function() {
+		var get = getURLParams();
+
+		if (get["lang"]) {
+			if (get["lang"] == "en") {
+				this.player.keys = {
+					"W": "UP",
+					"A": "LEFT",
+					"S": "DOWN",
+					"D": "RIGHT",
+					"E": "ACTION1",
+					"Q": "ACTION2"
+				};
+				this.socket.emit('changeKeys', JSON.stringify(this.player.keys));
+			}
+		}
+
+		if (get["n"]) {
+			this.player.nickname = get["n"];
+		}
+	};
+
 	Synchronizer.prototype.askNickname = function(content) {
 		if (this.player.nickname === null) {
-			document.getElementById('blackContainer').style.display = "block";
-			document.getElementById('nicknameInput').focus();
 			var synchronizer = this;
-			document.getElementById('nicknameForm').onsubmit = function() {
+			Interface.display("nickname", [function() {
 				if (this.nickname.value != "") {
 					synchronizer.player.nickname = this.nickname.value;
 					synchronizer.socket.emit('nickname', JSON.stringify(this.nickname.value));
 				}
 				return false;
-			}
+			}]);
 		}
 		else {
 			this.socket.emit('nickname', JSON.stringify(this.player.nickname));
@@ -101,27 +123,40 @@
 	};
 
 	Synchronizer.prototype.defineWorld = function(content) {
-		if (document.getElementById('blackContainer').style.display != "none") {
-			document.getElementById('blackContainer').style.display = "none";
-		}
+		Interface.display(null);
 
 		this.view.stopRender();
 		if (this.player.world) Worlds.delete(this.player.world.id);
 		this.player.clear();
+		this.view.clear();
 
 		var worldJSON = JSON.parse(content);
-		this.view.players = worldJSON.players;
-		worldJSON = worldJSON.world;
-		var world = Worlds.new(worldJSON.id);
-		world.update(worldJSON);
 
-		this.player.world = world;
-		this.player.world.gamemode.params = worldJSON.gamemode.params;
+		var sync = this;
 
-		this.view.attachWorld(world);
-		this.view.startRender();
+		Interface.modify("loading", 0);
+		Interface.display("loading");
 
-		this.socket.emit('request', JSON.stringify("definePlayer"));
+		FileLoader.unload();
+		FileLoader.addEventListener("refreshProgress", function(fileLoader, progress) { Interface.modify("loading", progress); });
+		FileLoader.addEventListener("filesLoaded", function() {
+			Interface.display(null);
+
+			var world = Worlds.new(worldJSON.world.id);
+			world.update(worldJSON.world);
+
+			sync.player.world = world;
+			sync.player.world.gamemode.params = worldJSON.world.gamemode.params;
+
+			sync.view.attachWorld(world);
+			sync.view.players = worldJSON.players;
+			sync.view.startRender();
+
+			AudioPlayer.init(world.id);
+
+			sync.socket.emit('request', JSON.stringify("definePlayer"));
+		});
+		FileLoader.loadWorld(worldJSON.world.id);
 	};
 
 	/**
@@ -157,7 +192,7 @@
 	 */
 	Synchronizer.prototype.entity = function(content) {
 		var entity = JSON.parse(content);
-		if (entity != this.player.entity) this.player.world.updateEntities([entity]);
+		this.player.world.updateEntities([entity]);
 	};
 
 	Synchronizer.prototype.removeEntity = function(content) {
@@ -203,6 +238,59 @@
 		}
 	};
 
+	Synchronizer.prototype.touchStart = function(e) {
+		var synchronizer = this;
+		var touchStart = function(action, button) {
+			if (action == "FULLSCREEN") {
+				synchronizer.view.fullscreen();
+			}
+			else {
+				for (var id in synchronizer.player.keys) {
+					if (synchronizer.player.keys[id] == action) synchronizer.keyDown(id);
+				}
+			}
+			button.className = "touchTouched";
+		};
+		var touchEnd = function(action, button) {
+			if (action == "FULLSCREEN") {
+
+			}
+			else {
+				for (var id in synchronizer.player.keys) {
+					if (synchronizer.player.keys[id] == action) synchronizer.keyUp(id);
+				}
+			}
+			button.className = "";
+		};
+
+		if (document.getElementById('touchContainer').style.display == "") {
+			document.getElementById('touchContainer').style.display = "block";
+			document.getElementById('touchUp').ontouchstart = function() { touchStart("UP", this); };
+			document.getElementById('touchUp').ontouchend = function() { touchEnd("UP", this); };
+			document.getElementById('touchLeft').ontouchstart = function() { touchStart("LEFT", this); };
+			document.getElementById('touchLeft').ontouchend = function() { touchEnd("LEFT", this); };
+			document.getElementById('touchDown').ontouchstart = function() { touchStart("DOWN", this); };
+			document.getElementById('touchDown').ontouchend = function() { touchEnd("DOWN", this); };
+			document.getElementById('touchRight').ontouchstart = function() { touchStart("RIGHT", this); };
+			document.getElementById('touchRight').ontouchend = function() { touchEnd("RIGHT", this); };
+			document.getElementById('touchAction1').ontouchstart = function() { touchStart("ACTION1", this); };
+			document.getElementById('touchAction1').ontouchend = function() { touchEnd("ACTION1", this); };
+			document.getElementById('touchAction2').ontouchstart = function() { touchStart("ACTION2", this); };
+			document.getElementById('touchAction2').ontouchend = function() { touchEnd("ACTION2", this); };
+			document.getElementById('touchFullscreen').ontouchstart = function() { touchStart("FULLSCREEN", this); };
+			document.getElementById('touchFullscreen').ontouchend = function() { touchEnd("FULLSCREEN", this); };
+			
+			document.getElementById('chatbox').style.top = "10px";
+			document.getElementById('chatbox').style.bottom = "initial";
+			document.getElementById('chatboxInput').style.marginBottom = "5px";
+			var firstChild = document.getElementById('chatbox').firstChild;
+			document.getElementById('chatbox').removeChild(firstChild);
+			document.getElementById('chatbox').appendChild(firstChild);
+		}
+	};
+
+
+
 	Synchronizer.prototype.restartWorld = function() {
 		this.socket.emit('restartWorld', "");
 	};
@@ -246,79 +334,11 @@
 	};
 
 
-
-
-
-	/*Synchronizer.prototype.jump = function() {
-		if (this.playerId) {
-
-			var entity = this.player.entity;
-			entity.jump = this.playerParams.jumpPower;
-
-			var vel;
-
-			if (this.world.type == "circular") {
-				var angleDistPos = toAngleDist({
-					x: entity.physicsBody.state.pos.x,
-					y: entity.physicsBody.state.pos.y
-				});
-				vel = rotatePoint(
-					entity.physicsBody.state.vel.x, entity.physicsBody.state.vel.y,
-					- (angleDistPos.angle + Math.PI/2),
-					0, 0
-				);
-				if (vel.y > -this.playerParams.jumpPower) vel.y = -this.playerParams.jumpPower;
-				vel = rotatePoint(
-					vel.x, vel.y,
-					(angleDistPos.angle + Math.PI/2),
-					0, 0
-				);
-			}
-			else if (this.world.type == "flat") {
-				vel = {
-					x: entity.physicsBody.state.vel.x,
-					y: entity.physicsBody.state.vel.y
-				};
-				if (vel.y > -this.playerParams.jumpPower) vel.y = -this.playerParams.jumpPower;
-			}
-			entity.physicsBody.state.vel.x = vel.x;
-			entity.physicsBody.state.vel.y = vel.y;
-
-			entity.physicsBody.sleep(false);
-		}
+	Synchronizer.prototype.audio = function(audioName) {
+		AudioPlayer.play(JSON.parse(audioName));
 	};
 
-	Synchronizer.prototype.roll = function(side) {
-		if (this.playerId) {
-			var entity = this.world.entities[this.playerId];
 
-			if (side == "left") side = -1;
-			else if (side == "right") side = 1;
-			entity.physicsBody.sleep(false);
-
-			entity.move = {
-				direction: {
-					top: false,
-					left: false,
-					bottom: false,
-					right: false
-				},
-				speed: this.playerParams.speed
-			};
-		}
-	};
-
-	Synchronizer.prototype.stopRoll = function(side) {
-		var entity = this.world.entities[this.playerId];
-
-		if (side == "left") side = -1;
-		else if (side == "right") side = 1;
-		if (entity.move) {
-			if (entity.move.side == side) {
-				entity.move = null;
-			}
-		}
-	};*/
 
 
 
@@ -356,6 +376,21 @@
 		point.x += centerX;
 		point.y += centerY;
 		return point;
+	}
+
+	function getURLParams(param) {
+		var vars = {};
+		window.location.href.replace( 
+			/[?&]+([^=&]+)=?([^&]*)?/gi, // regexp
+			function( m, key, value ) { // callback
+				vars[key] = value !== undefined ? value : '';
+			}
+		);
+
+		if ( param ) {
+			return vars[param] ? vars[param] : null;	
+		}
+		return vars;
 	}
 
 

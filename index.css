@@ -1,7 +1,15 @@
+html {
+    width: 100%;
+    height: 100%;
+}
+
+
 body {
 	font-family: Caviar Dreams;
 	color: white;
     background-color: #000000;
+    width: 100%;
+    height: 100%;
 }
 
 .val {
@@ -10,6 +18,14 @@ body {
     height: 100%;
     vertical-align: middle;
 }
+
+
+
+
+
+
+/* INTERFACES
+==============================*/
 
 #blackContainer {
 	display: none;
@@ -25,9 +41,12 @@ body {
     z-index: 2;
 }
 
+
+/* NICKNAME */
+
 #nicknameContainer {
     width: 50%;
-    display: inline-block;
+    display: none;
     vertical-align: middle;
 }
 
@@ -54,7 +73,117 @@ body {
 }
 
 
+/* LOADING */
 
+#loadingContainer {
+    width: 50%;
+    display: none;
+    vertical-align: middle;
+    text-align: center;
+}
+
+#loadingLabel {
+    display: block;
+    font-family: Caviar Dreams;
+    color: white;
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+#loadingBarContainer {
+    display: inline-block;
+    width: 60%;
+    height: 8px;
+    border: 1px white solid;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+#loadingBar {
+    display: inline-block;
+    height: 100%;
+    width: 0px;
+    background-color: white;
+    transition-duration: 200ms;
+}
+
+
+
+
+
+/* TOUCH SCREEN
+==============================*/
+
+#touchContainer {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    display: none;
+}
+
+#touchContainer div {
+    display: inline-block;
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 100%;
+    background-color: rgba(255, 255, 255, 0.08);
+    background-repeat: no-repeat;
+    box-sizing: border-box;
+    border: 3px rgba(0, 0, 0, 0.1);
+}
+#touchContainer div.touchTouched {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#touchUp {
+    left: 80px;
+    bottom: 150px;
+    background-image: url('./img/touchscreen/arrowUp.png');
+}
+#touchLeft {
+    left: 10px;
+    bottom: 80px;
+    background-image: url('./img/touchscreen/arrowLeft.png');
+}
+#touchDown {
+    left: 80px;
+    bottom: 10px;
+    background-image: url('./img/touchscreen/arrowDown.png');
+}
+#touchRight {
+    left: 150px;
+    bottom: 80px;
+    background-image: url('./img/touchscreen/arrowRight.png');
+}
+#touchAction1 {
+    right: 20px;
+    bottom: 80px;
+    background-image: url('./img/touchscreen/action1.png');
+}
+#touchAction2 {
+    right: 100px;
+    bottom: 30px;
+    background-image: url('./img/touchscreen/action2.png');
+}
+#touchContainer #touchFullscreen {
+    width: 60px;
+    height: 60px;
+    top: 10px;
+    right: 10px;
+    background-image: url('./img/touchscreen/fullscreen.png');
+}
+
+
+
+
+
+
+/* CHATBOX
+==============================*/
 
 #chatbox {
     position: fixed;
