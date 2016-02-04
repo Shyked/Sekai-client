@@ -72,8 +72,11 @@ var Chatbox = function() {
     // EVENTS
 
     var chatbox = this;
+    this.chatbox.onmouseover = function() { chatbox.mouseOver(); };
+    this.chatbox.onmouseout = function() { chatbox.mouseOut(); };
     this.chatboxInput.onfocus = function() { chatbox.onfocus(); };
     this.chatboxInput.onblur = function() { chatbox.onblur(); };
+    this.chatboxMessages.onfocus = function() { console.log("r"); };
     this.chatboxInput.onkeydown = function(e) { return chatbox.onkeydown(e); };
     this.chatboxInput.onkeyup = function(e) { return chatbox.onkeyup(e); };
     this.chatboxMessages.onanimationended = function() { chatbox.hideChatbox(); };
@@ -90,12 +93,25 @@ var Chatbox = function() {
 
     // VARS
 
+    this.isMouseOver = false
     this.hideTimeout = null;
     this.focused = false;
     this.history = [];
     this.historyPos = 0;
     this.historyKeepLine = "";
 
+};
+
+Chatbox.prototype.mouseOver = function() {
+    this.isMouseOver = true;
+};
+
+Chatbox.prototype.mouseOut = function() {
+    /*this.isMouseOver = false;
+    // console.log(this.focused);
+    if (!this.focused) {
+        this.onblur();
+    }*/
 };
 
 Chatbox.prototype.focus = function() {
@@ -113,9 +129,11 @@ Chatbox.prototype.onfocus = function() {
 };
 
 Chatbox.prototype.onblur = function() {
-    this.chatbox.setAttribute("data-focus","");
     this.focused = false;
-    this.displayMessages(1);
+    if (!this.isMouseOver) {
+        this.chatbox.setAttribute("data-focus","");
+        this.displayMessages(1);
+    }
 };
 
 Chatbox.prototype.onkeydown = function(e) {

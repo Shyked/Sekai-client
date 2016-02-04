@@ -289,6 +289,8 @@
 	    	view.moveCamera({x: 0, y: 0}, true);
 	    };
 
+	    //setInterval(function() { window.onresize(); }, 2000);
+
 	};
 
 	View.prototype.clear = function() {
@@ -1028,7 +1030,9 @@
 			else if (DOM.requestFullscreen) {
 				DOM.requestFullscreen();
 			}
-			document.body.style.zoom = "0.6";
+			if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
+				document.body.style.zoom = "0.6";
+			}
 		}
 		else {
 			if (document.exitFullscreen) {
@@ -1040,7 +1044,9 @@
 			else if (document.webkitCancelFullScreen) {
 				document.webkitCancelFullScreen();
 			}
-			document.body.style.zoom = "";
+			if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement) {
+				document.body.style.zoom = "";
+			}
 		}
 	};
 

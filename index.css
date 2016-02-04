@@ -20,6 +20,22 @@ body {
 }
 
 
+::selection {
+    background: #ffffff;
+    color: #000000;
+}
+::-moz-selection {
+    background: #888888;
+    color: #ffffff;
+}
+
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
 
 
 
