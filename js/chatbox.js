@@ -130,10 +130,10 @@ Chatbox.prototype.onfocus = function() {
 
 Chatbox.prototype.onblur = function() {
     this.focused = false;
-    if (!this.isMouseOver) {
+    //if (!this.isMouseOver) {
         this.chatbox.setAttribute("data-focus","");
         this.displayMessages(1);
-    }
+    //}
 };
 
 Chatbox.prototype.onkeydown = function(e) {
