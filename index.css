@@ -133,8 +133,6 @@ canvas {
 
 #touchContainer {
     position: fixed;
-    height: 100%;
-    width: 100%;
     top: 0;
     left: 0;
     display: none;
@@ -142,7 +140,7 @@ canvas {
 
 #touchContainer div {
     display: inline-block;
-    position: absolute;
+    position: fixed;
     width: 80px;
     height: 80px;
     border-radius: 100%;

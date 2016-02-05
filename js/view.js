@@ -176,6 +176,10 @@
 	    this.initEvents();
 
 
+	    // TouchScreen
+	    this.touchScreen = {};
+
+
 	    // Camera offset
 	    this.offset = {
 	    	x: 0,
@@ -258,6 +262,10 @@
 	    this.rightDown = false;
 	    this.lastMousePosition = {x: null, y: null};
 	    this.addEventListener('mousewheel', view.mouseWheel);
+
+	    this.addEventListener('touchstart', view.touchStart);
+	    this.addEventListener('touchmove', view.touchMove);
+	    this.addEventListener('touchend', view.touchEnd);
 
 
 	    this.preventKeyRepeat = {};
@@ -986,7 +994,7 @@
 	 * Used to zoom or dezoom the camera
 	 */
 	View.prototype.mouseWheel = function(view, e) {
-		view.zoom(- e.deltaY / 1000, true);
+		view.zoom(1 - e.deltaY / 1000, true);
 	};
 
 	/**
@@ -996,8 +1004,14 @@
 	 */
 	View.prototype.zoom = function(zoom, relative) {
 		relative = (relative)?1:0;
-		view.stage.scale.x = Math.min(Math.max(relative * view.stage.scale.x + zoom, ZOOM_MIN), ZOOM_MAX);
-		view.stage.scale.y = Math.min(Math.max(relative * view.stage.scale.y + zoom, ZOOM_MIN), ZOOM_MAX);
+		if (relative) {
+			view.stage.scale.x = Math.min(Math.max(view.stage.scale.x * zoom, ZOOM_MIN), ZOOM_MAX);
+			view.stage.scale.y = Math.min(Math.max(view.stage.scale.y * zoom, ZOOM_MIN), ZOOM_MAX);
+		}
+		else {
+			view.stage.scale.x = Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX);
+			view.stage.scale.y = Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX);
+		}
 	};
 
 	/**
@@ -1005,10 +1019,10 @@
 	 */
 	View.prototype.keyDown = function(view, key) {
 		if (key == "+") {
-			view.zoom(0.05, true);
+			view.zoom(1.05, true);
 		}
 		else if (key == "-") {
-			view.zoom(-0.05, true);
+			view.zoom(0.95, true);
 		}
 		else if (key == "0") {
 			view.zoom(1, false);
@@ -1016,6 +1030,28 @@
 		/*else if (key == "F9") {
 			view.fullscreen();
 		}*/
+	};
+
+	View.prototype.touchStart = function(view, e) {
+		if (e.touches.length == 2) {
+			view.touchScreen.pinchDist = Math.sqrt(Math.pow(e.touches[0].pageX - e.touches[1].pageX,2) + Math.pow(e.touches[0].pageY - e.touches[1].pageY,2));
+		}
+	};
+
+	View.prototype.touchMove = function(view, e) {
+		if (e.touches.length == 2) {
+			var dist = Math.sqrt(Math.pow(e.touches[0].pageX - e.touches[1].pageX,2) + Math.pow(e.touches[0].pageY - e.touches[1].pageY,2));
+			/*window.Chatbox.addMessage("Dist : " + dist, "Debug", {r: 200, g: 50, b: 50}, 1);
+			window.Chatbox.addMessage("Prev : " + dist, "Debug", {r: 200, g: 50, b: 50}, 1);*/
+			if (view.touchScreen.pinchDist) {
+				view.zoom(dist / view.touchScreen.pinchDist, true);
+			}
+			view.touchScreen.pinchDist = dist;
+		}
+	};
+
+	View.prototype.touchEnd = function(view, e) {
+		// body...
 	};
 
 	View.prototype.fullscreen = function() {

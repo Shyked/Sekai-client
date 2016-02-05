@@ -197,17 +197,18 @@ Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
         msgDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
         msgDOM.style.fontWeight = "bold";
 
-        msgDOM.innerHTML = msg.escapeHtml();
+        msgDOM.innerHTML = String(msg).escapeHtml();
     }
     else {
         var nicknameDOM = document.createElement("span");
         nicknameDOM.className = "nickname";
         nicknameDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+        nickname = String(nickname).escapeHtml();
 
         if (type == 0) nicknameDOM.innerHTML = "[" + nickname + "]";
         else if (type == 1) nicknameDOM.innerHTML = "&lt;" + nickname + "&gt;";
 
-        msgDOM.innerHTML = nicknameDOM.outerHTML + msg.escapeHtml();
+        msgDOM.innerHTML = nicknameDOM.outerHTML + String(msg).escapeHtml();
     }
 
     this.chatboxMessages.appendChild(msgDOM);
