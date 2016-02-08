@@ -25,9 +25,8 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	var ZOOM_MIN = 0.6;
-	//var ZOOM_MIN = 0.05;
-	var ZOOM_MAX = 1.8;
+	var ZOOM_MIN = 3000;
+	var ZOOM_MAX = 200;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
 
@@ -119,11 +118,13 @@
 	 *
 	 * @param world The world to render 
 	 */
-	var View = function(world) {
+	var View = function() {
+
+		this.resolution = 1;
 
 		if (document.location.href.split("?").length > 1 && document.location.href.split("?")[1].indexOf("WebGL") != -1)
-			this.renderer = new PIXI.WebGLRenderer(window.innerWidth, window.innerHeight, {antialias: true});
-		else this.renderer = new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight, {antialias: true});
+			this.renderer = new PIXI.WebGLRenderer(window.innerWidth * this.resolution, window.innerHeight * this.resolution, {antialias: true});
+		else this.renderer = new PIXI.CanvasRenderer(window.innerWidth * this.resolution, window.innerHeight * this.resolution, {antialias: true});
 		
 		this.renderer.backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	    document.body.appendChild(this.renderer.view);
@@ -141,7 +142,6 @@
 	    this.stage.scale.x = 1;
 	    this.stage.scale.y = 1;
 
-	    // this.graphics = new PIXI.Graphics();
 	    this.graphics = {
 	    	"entities": new PIXI.Graphics(),
 	    	"grid": new PIXI.Graphics(),
@@ -169,7 +169,6 @@
 	    this.background.zIndex = ZINDEX.background;
 	    this.entityFocusId = null;
 
-	    this.world = world;
 
 
 	    // Events
@@ -293,7 +292,7 @@
 
 	    window.onresize = function(e) {
 	    	var zoom = (document.body.style.zoom) ? document.body.style.zoom : 1;
-	    	view.renderer.resize(window.innerWidth / zoom, window.innerHeight / zoom);
+	    	view.renderer.resize(window.innerWidth / zoom * view.resolution, window.innerHeight / zoom * view.resolution);
 	    	view.moveCamera({x: 0, y: 0}, true);
 	    };
 
@@ -338,10 +337,8 @@
 		var view = this;
 		this.world.addEventListener("removeEntity", function(entityId) {view.removeSprite(entityId);});
 		this.getBackground(world.background.image);
-		this.world.physicsWorld.add(this.physicsRenderer);
-		this.world.physicsWorld.on('step', function() {
-			view.update();
-		});
+
+		this.world.addEventListener("afterStep", function() { view.update(); });
 	};
 
 	View.prototype.setFocus = function(entityId) {
@@ -360,10 +357,10 @@
 				else {
 					var divisionSize = view.world.background.divisionSize || BG_DIVISIONS_SIZE;
 					var count = 0;
-					var boundaryX = bgData.size.x * (divisionSize / 2) - (divisionSize / 2);
-					var boundaryY = bgData.size.y * (divisionSize / 2) - (divisionSize / 2);
-					for (var j = -boundaryY ; j <= boundaryY ; j += divisionSize) {
-						for (var i = -boundaryX ; i <= boundaryX ; i += divisionSize) {
+					var boundaryX = (bgData.size.x * divisionSize) / 2;
+					var boundaryY = (bgData.size.y * divisionSize) / 2;
+					for (var j = -boundaryY ; j < boundaryY ; j += divisionSize) {
+						for (var i = -boundaryX ; i < boundaryX ; i += divisionSize) {
 							var sprite = new PIXI.Sprite.fromImage("./img/worlds/" + background + "/background/" + bgData.images[count++]);
 							sprite.position.x = i;
 							sprite.position.y = j;
@@ -462,6 +459,8 @@
 		var entityST;
 
 		b = entity.physicsBody;
+
+
 
 		// Calc Smooth Teleport position modificator
 		entityST = false;
@@ -567,7 +566,7 @@
 		}
 
 		// Texture
-		if (entity.texture) {
+		if (entity.texture && entity.hasChanged()) {
 
 			// Init Sprite and Texture
 			if (!container.sprites[entity.id]) {
@@ -625,7 +624,7 @@
 		}
 
 		// Texture
-		if (entity.texture) {
+		if (entity.texture && entity.hasChanged()) {
 
 			// Init Sprite and Texture
 			if (!container.sprites[entity.id]) {
@@ -747,6 +746,8 @@
 		PIXIContainer.addChild(container.compounds[compoundId].graphics.entities);
 		container.PIXIContainer.addChild(PIXIContainer);
 		// if (container == this) this.stage.updateLayersOrder();
+		// sprites[idS].sprite.zIndex = this.world.entities[sprites[idS].id].zIndex;
+		PIXIContainer.zIndex = this.world.entities[compoundId].zIndex;
 		container.PIXIContainer.updateLayersOrder();
 	};
 
@@ -1004,13 +1005,15 @@
 	 */
 	View.prototype.zoom = function(zoom, relative) {
 		relative = (relative)?1:0;
+		var min = view.renderer.width / ZOOM_MIN;
+		var max = view.renderer.height / ZOOM_MAX;
 		if (relative) {
-			view.stage.scale.x = Math.min(Math.max(view.stage.scale.x * zoom, ZOOM_MIN), ZOOM_MAX);
-			view.stage.scale.y = Math.min(Math.max(view.stage.scale.y * zoom, ZOOM_MIN), ZOOM_MAX);
+			view.stage.scale.x = Math.min(Math.max(view.stage.scale.x * zoom, min), max);
+			view.stage.scale.y = Math.min(Math.max(view.stage.scale.y * zoom, min), max);
 		}
 		else {
-			view.stage.scale.x = Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX);
-			view.stage.scale.y = Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX);
+			view.stage.scale.x = Math.min(Math.max(zoom, min), max);
+			view.stage.scale.y = Math.min(Math.max(zoom, min), max);
 		}
 	};
 

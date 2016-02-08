@@ -10,7 +10,7 @@ else NODE_URL = document.location.hostname + ":4433";
 (function() {
 
 
-    view = new window.View(null);
+    view = new window.View();
     synchronizer = new Synchronizer(view);
 
 
