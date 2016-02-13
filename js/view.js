@@ -25,7 +25,8 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	var ZOOM_MIN = 3000;
+	// var ZOOM_MIN = 3000;
+	var ZOOM_MIN = 10000;
 	var ZOOM_MAX = 200;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
@@ -184,6 +185,14 @@
 	    	x: 0,
 	    	y: 0
 	    };
+	    this.cameraSpeedCoeff = 1;
+	    this.cameraTransition = {
+	    	"initialAngle": 0,
+	    	"initialDist": 0,
+	    	"direction": 1,
+	    	"progress": 1,
+	    	"previousOrigin": null
+	    };
 
 
 	    this.tick = 0;
@@ -328,6 +337,13 @@
 		this.clear();
 
 		// Rebuild
+		this.cameraTransition = {
+	    	"initialAngle": 0,
+	    	"initialDist": 0,
+	    	"direction": 1,
+	    	"progress": 1,
+	    	"previousOrigin": null
+	    };
 		var graphics = this.graphics.getAll();
 		for (var idG in graphics) {
 			this.stage.addChild(graphics[idG]);
@@ -428,13 +444,13 @@
 				this.refreshZIndex(this);
 			}
 
+			this.refreshCamera();
+			this.refreshPlayersNickname();
+
 			var cameraPos = this.getCameraPosition();
 			var depth = (this.world.background.depth != null && this.world.background.depth != undefined) ? this.world.background.depth : BG_DEPTH;
 			this.background.position.x = cameraPos.x * depth;
 			this.background.position.y = cameraPos.y * depth;
-
-			this.refreshCamera();
-			this.refreshPlayersNickname();
 
 			if (this.world.background.color != null && this.world.background.color != undefined) this.renderer.backgroundColor = parseInt(this.world.background.color);
 			else this.renderer.backgroundColor = DEFAULT_BACKGROUND_COLOR;
@@ -870,8 +886,10 @@
 
 		if (fEntity) {
 
-			var dx = fEntity.physicsBody.state.pos.x - this.offset.x;
-			var dy = fEntity.physicsBody.state.pos.y - this.offset.y;
+			var pos = fEntity.getPos();
+
+			var dx = pos.x - this.offset.x;
+			var dy = pos.y - this.offset.y;
 
 			var newDelta = {x: 0, y: 0};
 
@@ -880,19 +898,21 @@
 			}
 			else {
 
-				if (Math.abs(dx) > CAMERA_MIN * this.renderer.width / 2) {
-					newDelta.x += (dx - Math.sign(dx) * CAMERA_MIN * this.renderer.width / 2) * CAMERA_SPEED;
+				var smaller = Math.min(this.renderer.width / 2, this.renderer.height / 2);
+				var min = smaller * CAMERA_MIN;
+				var max = smaller * CAMERA_MAX;
+				var dAngleDist = toAngleDist({x: dx, y: dy});
+				var newDist = 0;
+
+				if (dAngleDist.dist > min) {
+					newDist = (dAngleDist.dist - min) * this.getCameraSpeed();
 				}
-				if (Math.abs(dx) > CAMERA_MAX * this.renderer.width / 2) {
-					newDelta.x += dx - Math.sign(dx) * (CAMERA_MAX * this.renderer.width / 2 + 1);
+				if (dAngleDist.dist - newDist > max) {
+					newDist = dAngleDist.dist - max;
 				}
 
-				if (Math.abs(dy) > CAMERA_MIN * this.renderer.height / 2) {
-					newDelta.y += (dy - Math.sign(dy) * CAMERA_MIN * this.renderer.height / 2) * CAMERA_SPEED;
-				}
-				if (Math.abs(dy) > CAMERA_MAX * this.renderer.height / 2) {
-					newDelta.y += dy - Math.sign(dy) * (CAMERA_MAX * this.renderer.height / 2 + 1);
-				}
+				dAngleDist.dist = newDist;
+				newDelta = toXY(dAngleDist);
 			}
 
 			this.moveCamera(newDelta, true);
@@ -916,16 +936,67 @@
 				this.stage.rotation = 0;
 			}
 			else if (this.world.type == "circular") {
-				var angleDist = toAngleDist(this.offset);
+				var origin = this.world.origin || {x: 0, y: 0};
+
+				if (!this.cameraTransition.previousOrigin) this.cameraTransition.previousOrigin = origin;
+				else {
+					if (this.cameraTransition.previousOrigin.x != origin.x || this.cameraTransition.previousOrigin.y != origin.y) {
+						var pOrigin = this.cameraTransition.previousOrigin;
+						var cPos = this.getCameraPosition();
+
+						// Previous Angle Dist relative to the camera
+						var prevAD = toAngleDist({
+							x: pOrigin.x - cPos.x,
+							y: pOrigin.y - cPos.y
+						});
+						this.cameraTransition.initialAngle = prevAD.angle;
+						this.cameraTransition.initialDist = prevAD.dist;
+
+						var newAD = toAngleDist({
+							x: origin.x - cPos.x,
+							y: origin.y - cPos.y
+						});
+						var diff = Math.mod(prevAD.angle - newAD.angle, Math.PI * 2);
+						if (diff < Math.PI) this.cameraTransition.direction = -1;
+						else this.cameraTransition.direction = 1;
+						this.cameraTransition.progress = 0;
+
+						this.cameraTransition.previousOrigin = origin;
+					}
+					if (this.cameraTransition.progress < 1) {
+						this.cameraTransition.progress += 0.02; // 1 => 1 / speed
+						var progressSinus = (Math.sin(this.cameraTransition.progress * Math.PI - Math.PI / 2) + 1) / 2;
+						var cPos = this.getCameraPosition();
+						var newAD = toAngleDist({
+							x: origin.x - cPos.x,
+							y: origin.y - cPos.y
+						});
+						var dAngle = (newAD.angle - this.cameraTransition.initialAngle) * progressSinus;
+						var dDist = (newAD.dist - this.cameraTransition.initialDist) * progressSinus;
+
+						origin = toXY({
+							"angle": this.cameraTransition.initialAngle + dAngle,
+							"dist": this.cameraTransition.initialDist + dDist
+						});
+						origin.x += cPos.x;
+						origin.y += cPos.y;
+
+						var originalSpeed = this.getCameraSpeed() / this.cameraSpeedCoeff;
+						this.cameraSpeedCoeff = Math.cos(this.cameraTransition.progress * Math.PI - Math.PI / 2) * (1 / originalSpeed / 5 - 1) + 1;
+					}
+				}
+
+				this.stage.pivot = new PIXI.Point(origin.x, origin.y);
+				var angleDist = toAngleDist({x: this.offset.x - origin.x, y: this.offset.y - origin.y});
 				this.stage.position.x = this.renderer.width / 2;
-				this.stage.position.y = (angleDist.dist * this.stage.scale.y + this.renderer.height / 2);
+				this.stage.position.y = angleDist.dist * this.stage.scale.y + this.renderer.height / 2;
 				this.stage.rotation = - (angleDist.angle + Math.PI/2);
 			}
 		}
 	};
 
 	/**
-	 * getmareaPosition()
+	 * getCameraPosition()
 	 * Returns the current corrdinates of the center of the camera
 	 */
 	View.prototype.getCameraPosition = function() {
@@ -933,6 +1004,10 @@
 			x: this.offset.x,
 			y: this.offset.y
 		};
+	};
+
+	View.prototype.getCameraSpeed = function() {
+		return CAMERA_SPEED * this.cameraSpeedCoeff;
 	};
 
 
@@ -1163,7 +1238,7 @@
 	 * Refreshes the text displaying the players nickname
 	 */
 	View.prototype.refreshPlayersNickname = function() {
-		var e, aabb, radius, pos, b, angle, angleDelta, positionDelta, progressSinus;
+		var e, aabb, radius, pos, b, angle, angleDelta, positionDelta, progressSinus, origin;
 		for (var idP in this.players) {
 			if (this.world.entities[this.players[idP].entityId]) {
 				if (this.players[idP].text == undefined) {
@@ -1190,7 +1265,8 @@
 				}
 
 				if (this.world.type == "circular") {
-					angle = toAngleDist({x: b.state.pos.x, y: b.state.pos.y}).angle - Math.PI/2;
+					origin = {x: this.stage.pivot.x, y: this.stage.pivot.y} || {x: 0, y: 0};
+					angle = toAngleDist({x: b.state.pos.x - origin.x, y: b.state.pos.y - origin.y}).angle - Math.PI/2;
 
 					pos = rotatePoint(
 						aabb.x + positionDelta.x + this.players[idP].text.width / 2,
@@ -1250,6 +1326,15 @@
 				dist: 0
 			};
 		}
+	}
+
+	function toXY(angleDist) {
+		var x = Math.cos(angleDist.angle) * angleDist.dist;
+		var y = Math.sin(angleDist.angle) * angleDist.dist;
+		return {
+			x: x,
+			y: y
+		};
 	}
 
 	function ajax(action, params, callback) {
