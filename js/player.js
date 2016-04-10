@@ -7,6 +7,7 @@
 		this.world = null;
 		this.entity = null;
 		this.nickname = null;
+		this.askedWorld = null;
 
 		this.keys = {
 			"Z": "UP",

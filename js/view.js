@@ -25,8 +25,8 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	// var ZOOM_MIN = 3000;
-	var ZOOM_MIN = 10000;
+	var ZOOM_MIN = 3000;
+	// var ZOOM_MIN = 10000;
 	var ZOOM_MAX = 200;
 
 	var SMOOTH_TELEPORT_SPEED = 0.05;
@@ -315,6 +315,7 @@
 		this.sprites = {};
 		this.compounds = {};
 	    this.players = {};
+	    this.world = null;
 
 		this.stage.scale.x = 1;
 		this.stage.scale.y = 1;
@@ -371,7 +372,7 @@
 					console.error("Mismatching number of images and size of background : " + bgData.images.length + " and " + (bgData.size.x * bgData.size.y));
 				}
 				else {
-					var divisionSize = view.world.background.divisionSize || BG_DIVISIONS_SIZE;
+					var divisionSize = bgData.divisionSize || BG_DIVISIONS_SIZE;
 					var count = 0;
 					var boundaryX = (bgData.size.x * divisionSize) / 2;
 					var boundaryY = (bgData.size.y * divisionSize) / 2;
@@ -799,7 +800,7 @@
 				sprites[idS].sprite.texture = view.textures[texture];
 				sprites[idS].sprite.anchor.x = 0.5;
 				sprites[idS].sprite.anchor.y = 0.5;
-				sprites[idS].sprite.zIndex = view.world.entities[sprites[idS].id].zIndex;
+				sprites[idS].sprite.zIndex = sprites[idS].zIndex;
 				sprites[idS].container.PIXIContainer.addChild(sprites[idS].sprite);
 				sprites[idS].container.PIXIContainer.updateLayersOrder();
 			}
@@ -813,7 +814,7 @@
 			this.loadingTextures[texture].push({
 				"sprite": container.sprites[id],
 				"container": container,
-				"id": id
+				"zIndex": this.world.entities[id].zIndex
 			});
 			ajax("getImagePath", {
 				"world": this.world.id,
@@ -834,13 +835,13 @@
 				this.loadingTextures[texture].push({
 					"sprite": container.sprites[id],
 					"container": container,
-					"id": id
+					"zIndex": this.world.entities[id].zIndex
 				});
 			}
 			else initSprite([{
 				"sprite": container.sprites[id],
 				"container": container,
-				"id": id
+				"zIndex": this.world.entities[id].zIndex
 			}]);
 		}
 	};
@@ -936,7 +937,7 @@
 				this.stage.rotation = 0;
 			}
 			else if (this.world.type == "circular") {
-				var origin = this.world.origin || {x: 0, y: 0};
+				var origin = this.world.entities[this.entityFocusId].origin || {x: 0, y: 0};
 
 				if (!this.cameraTransition.previousOrigin) this.cameraTransition.previousOrigin = origin;
 				else {

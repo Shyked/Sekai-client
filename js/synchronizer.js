@@ -94,6 +94,10 @@
 		if (get["n"]) {
 			this.player.nickname = get["n"];
 		}
+
+		if (get["world"]) {
+			this.player.askedWorld = get["world"];
+		}
 	};
 
 	Synchronizer.prototype.askNickname = function(content) {
@@ -102,13 +106,19 @@
 			Interface.display("nickname", [function() {
 				if (this.nickname.value != "") {
 					synchronizer.player.nickname = this.nickname.value;
-					synchronizer.socket.emit('nickname', JSON.stringify(this.nickname.value));
+					synchronizer.socket.emit('nickname', JSON.stringify({
+						"nickname": this.nickname.value,
+						"world": synchronizer.player.askedWorld
+					}));
 				}
 				return false;
 			}]);
 		}
 		else {
-			this.socket.emit('nickname', JSON.stringify(this.player.nickname));
+			this.socket.emit('nickname', JSON.stringify({
+				"nickname": this.player.nickname,
+				"world": this.player.askedWorld
+			}));
 		}
 	};
 

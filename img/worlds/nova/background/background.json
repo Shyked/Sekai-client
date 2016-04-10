@@ -2,5 +2,6 @@
 	"size": {
 		"x": 8,
 		"y": 8
-	}
+	},
+	"divisionSize": 512
 }
