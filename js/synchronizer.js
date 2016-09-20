@@ -33,6 +33,7 @@
 		this.socket.on('removeEntity',function(content){setTimeout(function(){ that.removeEntity(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('definePlayer',function(content){setTimeout(function(){ that.definePlayer(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('error',function(content){setTimeout(function(){ that.error(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('debug',function(content){setTimeout(function(){ that.debug(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('chatboxMessage',function(content){setTimeout(function(){ that.chatboxMessage(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('audio',function(content){setTimeout(function(){ that.audio(content) },Math.random()*RAND_LAG+LAG)});
 
@@ -209,8 +210,13 @@
 		this.player.world.removeEntity(JSON.parse(content));
 	};
 
+
 	Synchronizer.prototype.error = function(content) {
 		console.warn("Error from the server : " + JSON.parse(content));
+	};
+
+	Synchronizer.prototype.debug = function(content) {
+		console.warn("SERVER : " + JSON.parse(content));
 	};
 
 
@@ -324,7 +330,8 @@
 				messageObject.msg,
 				messageObject.nickname,
 				messageObject.color,
-				messageObject.type
+				messageObject.type,
+				messageObject.style
 			);
 		}
 	};

@@ -1,6 +1,8 @@
-
+(function() {
 
 var HISTORY_LENGTH = 40;
+
+var EMOJIS_PATH = "./img/emojis/";
 
 var KEYS = {
     13: "ENTER",
@@ -96,10 +98,19 @@ var Chatbox = function() {
     this.isMouseOver = false
     this.hideTimeout = null;
     this.focused = false;
+    this.messageCount = 0;
     this.history = [];
     this.historyPos = 0;
     this.historyKeepLine = "";
+    this.icons = {};
 
+};
+
+Chatbox.emojis = {
+    "world": "svg",
+    "left": "svg",
+    "right": "svg",
+    "smile": "png"
 };
 
 Chatbox.prototype.mouseOver = function() {
@@ -189,13 +200,14 @@ Chatbox.prototype.enter = function() {
 };
 
 
-Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
+Chatbox.prototype.addMessage = function(msg, nickname, color, type, style) {
     if (nickname == "" && type != 2) nickname = "Anonymous";
+
+
     var msgDOM = document.createElement("div");
     msgDOM.className = "message";
     if (type == 2) {
-        msgDOM.style.color = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
-        msgDOM.style.fontWeight = "bold";
+        msgDOM.className += " " + style;
 
         msgDOM.innerHTML = String(msg).escapeHtml();
     }
@@ -211,6 +223,8 @@ Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
         msgDOM.innerHTML = nicknameDOM.outerHTML + String(msg).escapeHtml();
     }
 
+    this.parseEmoji(msgDOM);
+
     this.chatboxMessages.appendChild(msgDOM);
     if (this.chatboxMessages.children.length > 8) this.chatboxMessages.removeChild(this.chatboxMessages.children[0]);
     this.displayMessages(Math.min(6000 + msg.length*100, 13000));
@@ -219,9 +233,17 @@ Chatbox.prototype.addMessage = function(msg, nickname, color, type) {
 Chatbox.prototype.displayMessages = function(hideTimeout) {
     this.chatbox.className = "displayMsg";
     this.chatboxMessages.style.display = "block";
+    this.chatboxMessages.style.height = "";
     if (this.hideTimeout) clearTimeout(this.hideTimeout);
     if (hideTimeout) {
-        if (!this.focused) this.hideTimeout = setTimeout(function(){ this.chatbox.className="hideMsg"; }, hideTimeout);
+        this.chatboxMessages.style.height = this.chatboxMessages.offsetHeight + "px";
+        var that = this;
+        if (!this.focused) this.hideTimeout = setTimeout(
+            function(){
+                that.chatboxMessages.style.height = "0px";
+                that.chatbox.className = "hideMsg";
+            }
+        , hideTimeout);
     }
 };
 
@@ -253,6 +275,41 @@ Chatbox.prototype.navHistory = function(direction) {
     this.chatboxInput.selectionStart = this.chatboxInput.value.length;
     this.chatboxInput.selectionEnd = this.chatboxInput.value.length;
 
+};
+
+
+Chatbox.prototype.parseEmoji = function(msgDOM) {
+    var msgEmojis = msgDOM.innerHTML.match(/:[^ ]+:/g);
+    var requested = {};
+    for (var id in msgEmojis) {
+        var emoji = msgEmojis[id].replace(/:/g, '');
+        if (Chatbox.emojis[emoji] == "svg") {
+            msgDOM.innerHTML = msgDOM.innerHTML.replace(new RegExp(msgEmojis[id], 'g'), '<svg class="emoji emoji-' + emoji + '"></svg>');
+            if (!requested[msgEmojis[id]]) {
+                requested[msgEmojis[id]] = true;
+                this.getIcon(emoji, function(svg, iconName) {
+                    var svgs = msgDOM.getElementsByClassName('emoji-' + iconName);
+                    var container = document.createElement('div');
+                    container.innerHTML = svg;
+                    for (var i = 0 ; i < svgs.length ; i++) {
+                        var className = svgs[i].className
+                        svgs[i].innerHTML = container.children[0].innerHTML;
+                        svgs[i].setAttribute('viewBox', container.children[0].getAttribute('viewBox'));
+                    }
+                })
+            }
+        }
+        else if (Chatbox.emojis[emoji] == "png") msgDOM.innerHTML = msgDOM.innerHTML.replace(new RegExp(msgEmojis[id], 'g'), '<img class="emoji emoji-' + emoji + '" src="' + EMOJIS_PATH + emoji + '.png" />')
+    }
+};
+
+Chatbox.prototype.getIcon = function(iconName, callback) {
+    if (this.icons[iconName]) callback(this.icons[iconName]);
+    var chatbox = this;
+    ajaxSvg(iconName, function(svg) {
+        chatbox.icons[iconName] = svg;
+        callback(svg, iconName);
+    });
 };
 
 
@@ -296,13 +353,27 @@ String.prototype.replaceAt=function(index, character) {
 }
 
 String.prototype.escapeHtml = function() {
-  var map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
+    var map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
 
-  return this.replace(/[&<>"']/g, function(m) { return map[m]; });
+    return this.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
+
+function ajaxSvg(icon, callback) {
+    var xmlhttp;
+    xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            callback(xmlhttp.responseText);
+        }
+    }
+    xmlhttp.open("GET", EMOJIS_PATH + icon + ".svg", true);
+    xmlhttp.send();
+}
+
+})();

@@ -29,6 +29,9 @@
 	// var ZOOM_MIN = 10000;
 	var ZOOM_MAX = 200;
 
+	var SPEED_ZOOM_MAX = 1.3;
+	var CAMERA_MOVING_THRESHOLD = 1;
+
 	var SMOOTH_TELEPORT_SPEED = 0.05;
 
 	var MAX_ENTITY_DISTANCE = 2800;
@@ -193,6 +196,7 @@
 	    	"progress": 1,
 	    	"previousOrigin": null
 	    };
+	    this.zoomFactor = 1;
 
 
 	    this.tick = 0;
@@ -720,23 +724,6 @@
 		//graphics.endFill();
 	};
 
-	View.prototype.renderOneEntity = function(entityId) {
-		if (entityId !== undefined && entityId !== null) {
-			if (this.renderEntityId === null || this.renderEntityId === undefined) {
-				this.storeEntityFocusId = this.entityFocusId;
-				for (var idE in this.world.entities) {
-					this.removeSprite(idE);
-				}
-			}
-			this.entityFocusId = entityId;
-			this.renderEntityId = entityId;
-		}
-		else {
-			this.renderEntityId = null;
-			this.entityFocusId = this.storeEntityFocusId;
-		}
-	};
-
 
 
 	/**
@@ -900,8 +887,8 @@
 			else {
 
 				var smaller = Math.min(this.renderer.width / 2, this.renderer.height / 2);
-				var min = smaller * CAMERA_MIN;
-				var max = smaller * CAMERA_MAX;
+				var min = smaller * CAMERA_MIN / this.zoomFactor;
+				var max = smaller * CAMERA_MAX / this.zoomFactor;
 				var dAngleDist = toAngleDist({x: dx, y: dy});
 				var newDist = 0;
 
@@ -929,8 +916,13 @@
 	View.prototype.moveCamera = function(vector, relative) {
 		if (this.world) {
 			var relative = (relative) ? 1 : 0;
+			var oldOffset = {
+				x: this.offset.x,
+				y: this.offset.y
+			};
 			this.offset.x = this.offset.x * relative + vector.x;
 			this.offset.y = this.offset.y * relative + vector.y;
+
 			if (this.world.type == "flat" || this.renderEntityId !== null || DEBUG) {
 				this.stage.position.x = -this.offset.x * this.stage.scale.x + this.renderer.width / 2;
 				this.stage.position.y = -this.offset.y * this.stage.scale.y + this.renderer.height / 2;
@@ -1008,7 +1000,7 @@
 	};
 
 	View.prototype.getCameraSpeed = function() {
-		return CAMERA_SPEED * this.cameraSpeedCoeff;
+		return CAMERA_SPEED * this.cameraSpeedCoeff * this.stage.scale.x;
 	};
 
 
@@ -1077,20 +1069,20 @@
 	/**
 	 * zoom()
 	 * Zooms the carema relatively or not
-	 * TODO Zoom with * instead of +
+	 * Relative zoom uses multiply
 	 */
 	View.prototype.zoom = function(zoom, relative) {
 		relative = (relative)?1:0;
-		var min = view.renderer.width / ZOOM_MIN;
-		var max = view.renderer.height / ZOOM_MAX;
+		var min = this.renderer.width / ZOOM_MIN;
+		var max = this.renderer.height / ZOOM_MAX;
 		if (relative) {
-			view.stage.scale.x = Math.min(Math.max(view.stage.scale.x * zoom, min), max);
-			view.stage.scale.y = Math.min(Math.max(view.stage.scale.y * zoom, min), max);
+			this.zoomFactor = Math.min(Math.max(this.zoomFactor * zoom, min), max);
 		}
 		else {
-			view.stage.scale.x = Math.min(Math.max(zoom, min), max);
-			view.stage.scale.y = Math.min(Math.max(zoom, min), max);
+			this.zoomFactor = Math.min(Math.max(zoom, min), max);
 		}
+		this.stage.scale.x = this.zoomFactor;
+		this.stage.scale.y = this.zoomFactor;
 	};
 
 	/**
@@ -1248,6 +1240,8 @@
 					this.stage.addChild(this.players[idP].text);
 					this.stage.updateLayersOrder();
 				}
+				this.players[idP].text.resolution = this.stage.scale.x;
+				this.players[idP].text.updateText();
 				b = this.world.entities[this.players[idP].entityId].physicsBody;
 				e = this.world.entities[this.players[idP].entityId];
 				aabb = b.aabb();
@@ -1340,13 +1334,8 @@
 
 	function ajax(action, params, callback) {
 		var xmlhttp;
-		if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
-			xmlhttp = new XMLHttpRequest();
-		}
-		else { // code for IE6, IE5
-			xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-		}
-		xmlhttp.onreadystatechange=function() {
+		xmlhttp = new XMLHttpRequest();
+		xmlhttp.onreadystatechange = function() {
 			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 				callback(JSON.parse(xmlhttp.responseText));
 			}

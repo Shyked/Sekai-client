@@ -209,7 +209,7 @@ canvas {
     border-radius: 1px;
     padding: 10px;
     width: 30%;
-    color: rgba(220,220,220,0.9);
+    color: rgba(200,200,200,1);
     font-family: Raleway;
     font-size: 0.95em;
     transition-duration: 600ms;
@@ -250,9 +250,36 @@ canvas {
     word-wrap: break-word;
 }
 
+#chatbox #chatboxMessages .message.messageJoin {
+    font-style: italic;
+    color: rgb(170, 180, 200);
+}
+
+#chatbox #chatboxMessages .message.messageLeave {
+    font-style: italic;
+    color: rgb(150, 160, 180);
+}
+
+#chatbox #chatboxMessages .message.messageWelcome {
+    font-weight: bold;
+    color: rgb(60, 150, 255);
+}
+
 #chatbox #chatboxMessages .nickname {
     margin-right: 5px;
     font-weight: bold;
+}
+
+#chatbox #chatboxMessages .message svg, #chatbox #chatboxMessages .message img {
+    fill: currentColor;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+}
+
+#chatbox #chatboxMessages {
+    transition-duration: 300ms;
+    overflow: hidden;
 }
 
 #chatbox.displayMsg #chatboxMessages {
@@ -262,6 +289,8 @@ canvas {
     -webkit-animation-name: messagesDisplay;
     -webkit-animation-duration: 300ms;
     -webkit-animation-fill-mode: both;
+    transform: scaleY(1) translateY(0);
+    transition-property: none;
 }
 
 #chatbox.hideMsg #chatboxMessages {
@@ -271,7 +300,10 @@ canvas {
     -webkit-animation-name: messagesHide;
     -webkit-animation-duration:600ms;
     -webkit-animation-fill-mode: both;
+    transform: scaleY(0) translateY(10%);
+    transition-property: transform, height;
 }
+
 
 @keyframes messagesDisplay {
     from {
