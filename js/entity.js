@@ -3,7 +3,7 @@
 
 	// CommonJS module
 	if (typeof exports !== 'undefined') {
-	    Physics = require("physicsjs-full");
+	    Physics = require("./physicsjs-full");
 	}
 
 	// browser
@@ -528,6 +528,7 @@
 	/* IMPORT */
 
 	Entity.import = function(entityJSON) {
+		if (!Entity[entityJSON.type]) throw "The entity type " + entityJSON.type + " does not exist";
 		return new Entity[entityJSON.type](entityJSON);
 	};
 
