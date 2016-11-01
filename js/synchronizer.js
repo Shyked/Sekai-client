@@ -25,6 +25,10 @@
 
 		var that = this;
 		this.socket.on('askNickname',function(content){setTimeout(function(){ that.askNickname(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('askSignUp',function(content){setTimeout(function(){ that.askSignUp(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('askLogIn',function(content){setTimeout(function(){ that.askLogIn(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('askBack',function(content){setTimeout(function(){ that.askBack(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('token',function(content){setTimeout(function(){ that.token(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('defineWorld',function(content){setTimeout(function(){ that.defineWorld(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('world',function(content){setTimeout(function(){ that.updateWorld(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('join',function(content){setTimeout(function(){ that.playerJoin(content) },Math.random()*RAND_LAG+LAG)});
@@ -88,7 +92,7 @@
 					"E": "ACTION1",
 					"Q": "ACTION2"
 				};
-				this.socket.emit('changeKeys', JSON.stringify(this.player.keys));
+				this.socket.emit('changeKeys', this.player.keys);
 			}
 		}
 
@@ -102,34 +106,136 @@
 	};
 
 	Synchronizer.prototype.askNickname = function(content) {
-		if (this.player.nickname === null) {
-			var synchronizer = this;
-			Interface.display("nickname", [function() {
-				if (this.nickname.value != "") {
-					synchronizer.player.nickname = this.nickname.value;
-					synchronizer.socket.emit('nickname', JSON.stringify({
-						"nickname": this.nickname.value,
-						"world": synchronizer.player.askedWorld
-					}));
-				}
-				return false;
-			}]);
+		var token = window.localStorage.token;
+		if (this.player.world) {
+			// Direct log
 		}
 		else {
-			this.socket.emit('nickname', JSON.stringify({
-				"nickname": this.player.nickname,
-				"world": this.player.askedWorld
-			}));
+			if (token && content.error != "UNKNOWN_TOKEN") {
+				this.socket.emit('token', {
+					"token": token,
+					"askedWorld": this.player.askedWorld
+				});
+			}
+			else if (this.player.nickname === null || content.error) {
+				this.displayNicknameInterface();
+				Interface.modify('nickname', { 'state': 'nickname' });
+			}
 		}
 	};
 
+	Synchronizer.prototype.displayNicknameInterface = function() {
+		var synchronizer = this;
+		Interface.display("nickname", {
+			onnickname: function(form) {
+				if (form.nickname && !/^[\w \-']+$/.test(form.nickname.value)) {
+					form.nickname.setAttribute('data-invalid', 'true');
+					form.nickname.value = form.nickname.value.replace(/[^\w \-']/g, '');
+					form.nickname.focus();
+				}
+				else {
+					form.nickname.setAttribute('data-invalid', 'false');
+					synchronizer.player.nickname = form.nickname.value;
+					synchronizer.socket.emit('nickname', {
+						"nickname": form.nickname.value
+					});
+				}
+			},
+			onsignup: function(form) {
+				if (form.nickname) {
+					form.nickname.setAttribute('data-invalid', 'false');
+					form.nickname.setAttribute('data-already-taken', 'false');
+				}
+				form.email.setAttribute('data-invalid', 'false');
+				form.password.setAttribute('data-invalid', 'false');
+				if (form.nickname && !/^[\w \-']+$/.test(form.nickname.value)) {
+					form.nickname.setAttribute('data-invalid', 'true');
+					form.nickname.value = form.nickname.value.replace(/[^\w \-']/g, '');
+					form.nickname.focus();
+				}
+				else if (!/^.+@.+$/.test(form.email.value)) {
+					form.email.setAttribute('data-invalid', 'true');
+					form.email.focus();
+				}
+				else if (form.password.value.length < 6) {
+					form.password.setAttribute('data-invalid', 'true');
+					form.password.focus();
+				}
+				else {
+					synchronizer.socket.emit('signup', {
+						"token": window.localStorage.token,
+						"nickname": form.nickname ? form.nickname.value : document.getElementById('nicknameInput').value,
+						"email": form.email.value,
+						"hashed_password": sha1("V3ry54l7y" + form.password.value),
+						"askedWorld": synchronizer.player.askedWorld
+					});
+				}
+			},
+			onlogin: function(form) {
+				hashedString = sha1(synchronizer.socket.id + toReguserName(synchronizer.player.nickname) + sha1("V3ry54l7y" + form.password.value));
+				synchronizer.socket.emit('login', {
+					"token": window.localStorage.token,
+					"nickname": synchronizer.player.nickname,
+					"hashedString": hashedString,
+					"askedWorld": synchronizer.player.askedWorld
+				});
+			},
+			onstart: function(form) {
+				synchronizer.socket.emit('start', {
+					"token": window.localStorage.token,
+					"askedWorld": synchronizer.player.askedWorld
+				});
+			}
+		});
+	};
+
+	Synchronizer.prototype.askSignUp = function(content) {
+		var error = content.error;
+		if (error) {
+			if (error == "ALREADY_EXISTS") {
+				Interface.modify('nickname', {
+					'state': 'back',
+					'trigger': error
+				});
+			}
+		}
+		else Interface.modify('nickname', { 'state': 'signup' });
+	};
+
+	Synchronizer.prototype.askLogIn = function(content) {
+		Interface.modify('nickname', { 'state': 'login' });
+	};
+
+	Synchronizer.prototype.askBack = function(content) {
+		this.displayNicknameInterface();
+		var connected = content.connected;
+		var nickname = content.nickname;
+		this.player.nickname = nickname;
+		if (connected) {
+			Interface.modify('nickname', {
+				'state': 'backConnected',
+				'nickname': nickname
+			});
+		}
+		else {
+			Interface.modify('nickname', {
+				'state': 'back',
+				'nickname': nickname
+			});
+		}
+	};
+
+	Synchronizer.prototype.token = function(content) {
+		window.localStorage.token = content.token;
+	};
+
 	Synchronizer.prototype.playerJoin = function(content) {
-		var player = JSON.parse(content);
+		var player = content;
 		this.view.newPlayer(player);
 	};
 
 	Synchronizer.prototype.playerLeave = function(content) {
-		var player = JSON.parse(content);
+		var player = content;
 		this.view.clearPlayer(player.id);
 	};
 
@@ -141,33 +247,33 @@
 		this.player.clear();
 		this.view.clear();
 
-		var worldJSON = JSON.parse(content);
+		var worldHash = content;
 
 		var sync = this;
 
-		Interface.modify("loading", 0);
+		Interface.modify("loading", { "progress": 0 });
 		Interface.display("loading");
 
 		FileLoader.unload();
-		FileLoader.addEventListener("refreshProgress", function(fileLoader, progress) { Interface.modify("loading", progress); });
+		FileLoader.addEventListener("refreshProgress", function(fileLoader, progress) { Interface.modify("loading", { "progress": progress }); });
 		FileLoader.addEventListener("filesLoaded", function() {
 			Interface.display(null);
 
-			var world = Worlds.new(worldJSON.world.id);
-			world.update(worldJSON.world);
+			var world = Worlds.new(worldHash.world.id);
+			world.update(worldHash.world);
 
 			sync.player.world = world;
-			sync.player.world.gamemode.params = worldJSON.world.gamemode.params;
+			sync.player.world.gamemode.params = worldHash.world.gamemode.params;
 
 			sync.view.attachWorld(world);
-			sync.view.players = worldJSON.players;
+			sync.view.players = worldHash.players;
 			sync.view.startRender();
 
 			AudioPlayer.init(world.id);
 
-			sync.socket.emit('request', JSON.stringify("definePlayer"));
+			sync.socket.emit('request', "definePlayer");
 		});
-		FileLoader.loadWorld(worldJSON.world.id);
+		FileLoader.loadWorld(worldHash.world.id);
 	};
 
 	/**
@@ -178,15 +284,15 @@
 	 */
 	Synchronizer.prototype.updateWorld = function(content) {
 
-		var worldJSON = JSON.parse(content);
-		var world = Worlds.get(worldJSON.id);
+		var worldHash = content;
+		var world = Worlds.get(worldHash.id);
 		if (world) {
-			world.update(worldJSON);
+			world.update(worldHash);
 		}
 	};
 
 	Synchronizer.prototype.definePlayer = function(content) {
-		var playerParams = JSON.parse(content);
+		var playerParams = content;
 		this.player.world.updateEntities([playerParams.entity]);
 		this.view.setFocus(playerParams.entity.id);
 		this.player.entity = this.player.world.entities[playerParams.entity.id];
@@ -202,27 +308,27 @@
 	 * @param content The JSON String containing the entity
 	 */
 	Synchronizer.prototype.entity = function(content) {
-		var entity = JSON.parse(content);
+		var entity = content;
 		this.player.world.updateEntities([entity]);
 	};
 
 	Synchronizer.prototype.removeEntity = function(content) {
-		this.player.world.removeEntity(JSON.parse(content));
+		this.player.world.removeEntity(content);
 	};
 
 
 	Synchronizer.prototype.error = function(content) {
-		console.warn("Error from the server : " + JSON.parse(content));
+		console.warn("Error from the server : " + content);
 	};
 
 	Synchronizer.prototype.debug = function(content) {
-		console.warn("SERVER : " + JSON.parse(content));
+		console.warn("SERVER : " + content);
 	};
 
 
 
 	Synchronizer.prototype.mouseDown = function(x, y) {
-		this.socket.emit('mousedown', JSON.stringify({x: x, y: y}));
+		this.socket.emit('mousedown', {x: x, y: y});
 	};
 
 	Synchronizer.prototype.keyDown = function(key) {
@@ -236,20 +342,20 @@
 
 			// If not, send the key to the server
 			else {
-				this.socket.emit('keydown', JSON.stringify({
+				this.socket.emit('keydown', {
 					"key": key,
 					"entity": this.player.entity.export()
-				}));
+				});
 				this.player.keyDown(key);
 			}
 		}
 	};
 	Synchronizer.prototype.keyUp = function(key) {
 		if (this.player.entity) {
-			this.socket.emit('keyup', JSON.stringify({
+			this.socket.emit('keyup', {
 				"key": key,
 				"entity": this.player.entity.export()
-			}));
+			});
 			this.player.keyUp(key);
 		}
 	};
@@ -315,16 +421,16 @@
 		if (this.player.world) {
 			var player = this.player.entity;
 			if (player) {
-				this.socket.emit('player', JSON.stringify({
+				this.socket.emit('player', {
 					"worldId": this.player.world.id,
 					"player": player.export()
-				}));
+				});
 			}
 		}
 	};
 
 	Synchronizer.prototype.chatboxMessage = function(content) {
-		var messageObject = JSON.parse(content);
+		var messageObject = content;
 		if (Chatbox) {
 			Chatbox.addMessage(
 				messageObject.msg,
@@ -344,15 +450,15 @@
 					view.zoom(parseFloat(command[1]));
 				}
 
-				else this.socket.emit('chatboxMessage', JSON.stringify(text));
+				else this.socket.emit('chatboxMessage', text);
 			}
-			else this.socket.emit('chatboxMessage', JSON.stringify(text));
+			else this.socket.emit('chatboxMessage', text);
 		}
 	};
 
 
 	Synchronizer.prototype.audio = function(audioName) {
-		AudioPlayer.play(JSON.parse(audioName));
+		AudioPlayer.play(audioName);
 	};
 
 
@@ -408,6 +514,10 @@
 			return vars[param] ? vars[param] : null;	
 		}
 		return vars;
+	}
+
+	function toReguserName(nickname) {
+		return nickname.toLowerCase().replace(/[^a-z0-9]/g, "");
 	}
 
 

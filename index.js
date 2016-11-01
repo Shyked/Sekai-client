@@ -4,6 +4,9 @@ var NODE_URL;
 if (document.location.hostname == "shyked.fr") {
 	NODE_URL = "ws://sekai-server.herokuapp.com/"
 }
+else if (document.location.hostname == "") {
+  NODE_URL = "ws://localhost:4433"
+}
 else NODE_URL = document.location.hostname + ":4433";
 
 

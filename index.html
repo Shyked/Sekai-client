@@ -10,13 +10,14 @@
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=0.6, user-scalable=0">
 	</head>
-	<body>
+	<body style="display: none;">
 		<script src="./socket.io-client/socket.io.js"></script>
 		<script src="./modules/pixi.min.js"></script>
 		<script src="./modules/physicsjs-full.js"></script>
 
-		<script src="./js/onload.js"></script>
 		<script src="./js/modulo.js"></script>
+		<script src="./js/sha1.js"></script>
+		<script src="./js/cookies.js"></script>
 		<script src="./js/player.js"></script>
 		<script src="./js/audioPlayer.js"></script>
 		<script src="./js/fileLoader.js"></script>
@@ -36,19 +37,148 @@
 
 		<div id="blackContainer">
 			<div class="val"></div>
-			<div id="nicknameContainer">
-				<form action="#" id="nicknameForm">
-					<div>Nickname</div>
-					<input id="nicknameInput" name="nickname" type="text" maxlength="25"/>
-				</form>
+
+
+			<div id="nicknameContainer" class="interface">
+				<div id="nicknameNickname">
+					<form action="#" id="nicknameNicknameForm">
+						<div class="caption">Who are you...?</div>
+						<div class="inputContainer">
+							<input id="nicknameInput" name="nickname" autocomplete="off" type="text" maxlength="25"/>
+							<div class="inputBase"></div>
+							<div class="placeholder">Nickname</div>
+						</div>
+					</form>
+				</div>
+				<div id="nicknameUser">
+					<hr/>
+
+					<div id="nicknameSignUp">
+						<div class="caption">
+							<span id="nicknameCaptionSignUp"></span>... This is the first time we meet, right?
+						</div>
+						<div class="row">
+							<div class="col">
+								<button class="nicknameResetButton">◄ Back</button>
+							</div>
+							<div class="col invert">
+								<form action="#" id="nicknameSignUpForm">
+									<div class="caption">Sign up</div>
+									<div class="inputContainer">
+										<input id="nicknameEmail" name="email" autocomplete="off" type="text" maxlength="100" />
+										<div class="inputBase"></div>
+										<div class="placeholder">Email</div>
+									</div>
+									<div class="inputContainer">
+										<input id="" name="password" autocomplete="off" type="password" maxlength="100"/>
+										<div class="inputBase"></div>
+										<div class="placeholder">Password (6 char or +)</div>
+									</div>
+									<div class="inputContainer">
+										<input type="submit" value="Sing up" />
+									</div>
+								</form>
+							</div>
+							<div class="col">
+								<button class="nicknameStartButton">Later, let me play! ►</button>
+							</div>
+						</div>
+					</div>
+
+					<div id="nicknameLogIn">
+						<div class="caption">
+							Are you the <span id="nicknameCaptionLogIn"></span> I know?
+						</div>
+						<div class="row">
+							<div class="col">
+								<button class="nicknameResetButton">◄ No, sorry</button>
+							</div>
+							<div class="col invert">
+								<form action="#" id="nicknameLogInForm">
+									<div class="inputContainer">
+										<input name="password" autocomplete="off" type="password" maxlength="100"/>
+										<div class="inputBase"></div>
+										<div class="placeholder">Password</div>
+									</div>
+									<div class="inputContainer">
+										<input type="submit" value="Log in" />
+									</div>
+								</form>
+							</div>
+							<div class="col">
+								<button class="nicknameStartButton">No, let me play anyway ►</button>
+							</div>
+						</div>
+					</div>
+
+					<div id="nicknameBack">
+						<div class="caption">
+							Welcome back, <span id="nicknameCaptionBack"></span>!
+						</div>
+						<div class="row">
+							<div class="col">
+								<button class="nicknameResetButton">◄ Reset your progress</button>
+							</div>
+							<div class="col invert">
+								<form action="#" id="nicknameBackForm">
+									<div class="caption">Link to an account</div>
+									<div class="inputContainer">
+										<input name="nickname" autocomplete="off" type="text" maxlength="25" />
+										<div class="inputBase"></div>
+										<div class="placeholder">Nickname<span id="nicknameAlreadyTaken"> (Already taken)</span></div>
+									</div>
+									<div class="inputContainer">
+										<input name="email" autocomplete="off" type="email" maxlength="100" />
+										<div class="inputBase"></div>
+										<div class="placeholder">Email</div>
+									</div>
+									<div class="inputContainer">
+										<input id="" name="password" autocomplete="off" type="password" maxlength="100"/>
+										<div class="inputBase"></div>
+										<div class="placeholder">Password (6+)</div>
+									</div>
+									<div class="inputContainer">
+										<input type="submit" value="Link" />
+									</div>
+								</form>
+							</div>
+							<div class="col">
+								<button class="nicknameStartButton">Later, resume the game! ►</button>
+							</div>
+						</div>
+					</div>
+
+					<div id="nicknameBackConnected">
+						<div class="caption">
+							Welcome back, <span id="nicknameCaptionBackConnected"></span>!
+						</div>
+						<div class="row">
+							<div class="col">
+								<button class="nicknameResetButton">◄ Log out</button>
+							</div>
+							<div class="col">
+								<button class="nicknameStartButton">Enter Sekai ►</button>
+							</div>
+						</div>
+					</div>
+
+				</div>
 			</div>
-			<div id="loadingContainer">
+
+
+
+			<div id="loadingContainer" class="interface">
 				<div id="loadingLabel">Entering the world...</div>
 				<div id="loadingBarContainer">
 					<div id="loadingBar"></div>
 				</div>
 			</div>
+
+
+
 		</div>
+
+
 
 		<div id="touchContainer">
 			<div id="touchUp"></div>

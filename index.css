@@ -10,6 +10,7 @@ body {
     background-color: #000000;
     width: 100%;
     height: 100%;
+    display: block!important;
 }
 
 .val {
@@ -19,13 +20,83 @@ body {
     vertical-align: middle;
 }
 
+.hide {
+    opacity: 0!important;
+}
+
+div {
+    box-sizing: border-box;
+}
+
+hr {
+    outline: none;
+    border: none;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 0 0 30px 0;
+}
+
+input {
+    font-family: Caviar Dreams;
+    font-size: 25px;
+    border: none;
+    background: none;
+    color: white;
+    padding: 0.3em 0;
+    text-align: center;
+    font-weight: bold;
+    outline: none;
+    width: 100%;
+}
+
+.invert input {
+    color: black;
+}
+
+input[type="submit"], button {
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    box-shadow: 0 0 1px 3px rgb(60, 150, 255);
+    border-radius: 5px;
+    font-family: Caviar Dreams;
+    font-weight: bold;
+    padding: 4px 15px;
+    font-size: 16px;
+    cursor: pointer;
+}
+input[type="submit"]:hover, input[type="submit"]:focus, button:hover, button:focus {
+    background-color: rgba(128, 128, 128, 0.2);
+}
+input[type="submit"]:active, button:active {
+    background-color: rgba(128, 128, 128, 0.4);
+}
+
+.invert input[type="submit"], .invert button {
+    color: black;
+}
+
+.invert {
+    background-color: white;
+    color: black;
+}
 
 ::selection {
     background: #ffffff;
     color: #000000;
 }
 ::-moz-selection {
-    background: #888888;
+    background: #ffffff;
+    color: #000000;
+}
+
+.invert ::selection {
+    background: #000000;
+    color: #ffffff;
+}
+.invert ::-moz-selection {
+    background: #000000;
     color: #ffffff;
 }
 
@@ -59,43 +130,234 @@ canvas {
     z-index: 2;
 }
 
+#blackContainer.show {
+    display: block;
+}
+
+#blackContainer > .interface {
+    display: none;
+}
+
+#blackContainer > .interface.show {
+    display: inline-block;
+}
+
 
 /* NICKNAME */
 
 #nicknameContainer {
-    width: 50%;
-    display: none;
+    width: 1000px;
+    max-width: 90%;
     vertical-align: middle;
 }
 
-#nicknameContainer div {
-    font-size: 1.4em;
-    margin-bottom: 0.5em;
+#nicknameContainer[data-state="nickname"] #nicknameNickname {
+    opacity: 1;
 }
 
-#nicknameInput {
-    font-family: Caviar Dreams;
+#nicknameContainer #nicknameNickname {
+    opacity: 0.1;
+    transition-duration: 700ms;
+}
+
+#nicknameContainer #nicknameNickname .caption {
+    opacity: 0;
     font-size: 1.4em;
-    border: 0.1em white solid;
-    background: none;
-    border-radius: 0.2em;
-    color: white;
-    padding: 0.3em 0.5em;
+    transition-duration: 600ms;
+    transition-timing-function: ease-in-out;
+}
+
+#nicknameContainer[data-state="nickname"] #nicknameNickname .caption {
+    opacity: 1;
+    transition-duration: 1.5s;
+    transition-delay: 300ms;
+}
+
+.inputContainer {
+    width: 270px;
+    max-width: 100%;
+    display: inline-block;
+    margin: 0.5em 0;
+}
+
+.inputBase {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: rgba(128, 128, 128, 0.2);
     text-align: center;
-    font-weight: bold;
-    outline: none;
+}
+.inputBase::after {
+    content: "";
+    width: 0;
+    display: inline-block;
+    background-color: rgb(60, 150, 255);
+    height: 100%;
+    transition-duration: 100ms;
+}
+input:focus + .inputBase::after {
+    width: 100%;
+    animation-name: glow;
+    animation-duration: 2s;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
+}
+input[readonly]:focus + .inputBase::after {
+    width: 0%;
+}
+@keyframes glow {
+    0% { box-shadow: 0 0 30px 1px rgba(50, 119, 255, 1) }
+    50% { box-shadow: 0 0 20px 1px rgba(28, 88, 206, 0.6); }
+    100% { box-shadow: 0 0 30px 1px rgba(50, 119, 255, 1) }
 }
 
-#nicknameInput:focus {
-    background-color: rgba(255,255,255,0.1);
+.placeholder {
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: bold;
+    color: #888;
+    transform: translateY(calc(-1em + -10px));
+    margin-top: 2px;
+    transition-duration: 100ms;
+    pointer-events: none;
 }
+input[data-invalid="true"] + .inputBase::after {
+    background-color: rgb(250, 60, 60);
+}
+input[data-invalid="true"]:focus + .inputBase::after {
+    animation-name: glow-red;
+}
+@keyframes glow-red {
+    0% { box-shadow: 0 0 30px 1px rgba(250, 50, 30, 1) }
+    50% { box-shadow: 0 0 20px 1px rgba(200, 30, 30, 0.6); }
+    100% { box-shadow: 0 0 30px 1px rgba(250, 50, 30, 1) }
+}
+input[data-invalid="true"] + .inputBase + .placeholder {
+    color: #e44;
+}
+input:focus + .inputBase + .placeholder, input[data-empty="false"] + .inputBase + .placeholder {
+    transform: initial;
+}
+
+#nicknameAlreadyTaken {
+    display: none;
+}
+input[data-already-taken="true"] + .inputBase + .placeholder > #nicknameAlreadyTaken {
+    display: inline;
+}
+
+
+#nicknameContainer hr {
+    width: 0;
+    transition-duration: 1s;
+    transition-delay: 600ms;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0;
+    display: none;
+}
+
+#nicknameContainer[data-state="nickname"] hr {
+    width: 0;
+    opacity: 0;
+}
+
+div#nicknameContainer[data-state] hr {
+    width: 100%;
+    opacity: 1;
+}
+
+
+
+#nicknameUser {
+    /*margin-top: 50px;*/
+    width: 100%;
+    height: 400px;
+}
+
+#nicknameUser > div {
+    height: 100%;
+    position: relative;
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: 500ms;
+}
+
+.row {
+    display: flex;
+    width: 100%;
+}
+
+#nicknameLogIn { top: -100%; }
+#nicknameBack { top: -200%; }
+#nicknameBackConnected { top: -300%; }
+
+#nicknameContainer[data-state="signup"] #nicknameSignUp,
+#nicknameContainer[data-state="login"] #nicknameLogIn,
+#nicknameContainer[data-state="back"] #nicknameBack,
+#nicknameContainer[data-state="backConnected"] #nicknameBackConnected
+{
+    opacity: 1;
+    pointer-events: initial;
+}
+
+#nicknameUser input {
+    font-size: 20px;
+    font-weight: normal;
+}
+
+#nicknameUser input[type="submit"] {
+    font-size: 16px;
+    font-weight: bold;
+    width: initial;
+    right: 0;
+    position: relative;
+    float: right;
+    padding: 0.2em 1em;
+}
+
+#nicknameUser .col {
+    width: 100%;
+    display: block;
+    font-size: 20px;
+    vertical-align: top;
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 1.5em;
+}
+
+#nicknameUser > div > .caption {
+    width: 100%;
+    font-size: 1.5em;
+    margin-bottom: 1em;
+    transition-delay: 300ms;
+    transition-duration: 2s;
+    transition-timing-function: ease-out;
+}
+
+#nicknameUser > div > .caption > span {
+    font-weight: bold;
+}
+
+#nicknameContainer #nicknameUser > div > .caption { opacity: 0; }
+#nicknameContainer[data-state="nickname"] #nicknameUser > div > .caption { opacity: 0; }
+div#nicknameContainer[data-state] #nicknameUser > div > .caption { opacity: 1; }
+
+#nicknameUser .col .caption {
+    font-weight: bold;
+}
+
+#nicknameUser button {
+    margin-top: 50px;
+}
+
 
 
 /* LOADING */
 
 #loadingContainer {
     width: 50%;
-    display: none;
     vertical-align: middle;
     text-align: center;
 }
@@ -241,6 +503,10 @@ canvas {
     width: calc(100% - 30px);
     color: white;
     font-family: Raleway;
+    font-weight: normal;
+    font-size: 14px;
+    text-align: left;
+    padding: 0.3em 0;
     padding-left: 4px;
 }
 
