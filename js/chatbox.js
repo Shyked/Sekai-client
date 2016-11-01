@@ -99,8 +99,8 @@ var Chatbox = function() {
     this.hideTimeout = null;
     this.focused = false;
     this.messageCount = 0;
-    this.history = [];
-    this.historyPos = 0;
+    this.history = window.localStorage.history ? JSON.parse(window.localStorage.history) : [];
+    this.historyPos = this.history.length;
     this.historyKeepLine = "";
     this.icons = {};
 
@@ -183,6 +183,8 @@ Chatbox.prototype.send = function() {
     this.history.push(text);
     if (this.history.length > HISTORY_LENGTH) this.history.splice(0, this.history.length - HISTORY_LENGTH);
     this.historyPos = this.history.length;
+
+    window.localStorage.history = JSON.stringify(this.history);
 
     this.triggerEvent("send", text);
     return text;
