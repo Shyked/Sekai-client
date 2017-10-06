@@ -1,0 +1,844 @@
+/* #3C96FF */
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+
+body {
+  color: white;
+  background-color: #000000;
+  width: 100%;
+  height: 100%;
+  display: block!important;
+}
+
+body * {
+  font-family: Josefin Sans, Josefin Sans Backup, sans-serif;
+}
+
+.val {
+  display: inline-block;
+  width: 0px;
+  height: 100%;
+  vertical-align: middle;
+}
+
+.hide {
+  opacity: 0!important;
+}
+
+div {
+  box-sizing: border-box;
+}
+
+hr {
+  outline: none;
+  border: none;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 0 0 30px 0;
+}
+
+input {
+  font-size: 25px;
+  border: none;
+  background: none;
+  color: white;
+  padding: 0.3em 0;
+  text-align: center;
+  font-weight: bold;
+  outline: none;
+  width: 100%;
+}
+
+.invert input {
+  color: black;
+}
+
+input[type="submit"], button {
+  background: none;
+  border: none;
+  outline: none;
+  color: white;
+  box-shadow: 0 0 1px 3px rgb(60, 150, 255);
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  margin: auto;
+  align-items: center;
+  padding: 0;
+}
+input[type="submit"]:hover, input[type="submit"]:focus, button:hover, button:focus {
+  background-color: rgba(128, 128, 128, 0.2);
+}
+input[type="submit"]:active, button:active {
+  background-color: rgba(128, 128, 128, 0.4);
+}
+
+input[type="submit"] .arrow, button .arrow {
+  font-size: 0.8em;
+  padding: 0 0.4em;
+  color: rgb(60, 150, 255);
+  background-color: rgba(200, 230, 255, 0.15);
+  height: 2.2em;
+  display: flex;
+  align-items: center;
+}
+input[type="submit"] .label, button .label {
+  width: 100%;
+  padding: 0.2em 1em;
+}
+
+.invert input[type="submit"], .invert button {
+  color: black;
+}
+
+.invert {
+  background-color: white;
+  color: black;
+}
+
+::selection {
+  background: #ffffff;
+  color: #000000;
+}
+::-moz-selection {
+  background: #ffffff;
+  color: #000000;
+}
+
+.invert ::selection {
+  background: #000000;
+  color: #ffffff;
+}
+.invert ::-moz-selection {
+  background: #000000;
+  color: #ffffff;
+}
+
+.loader {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.loader > * {
+  content: "";
+  width: 18px;
+  height: 20px;
+  display: block;
+  vertical-align: midde;
+  border-radius: 50px;
+  left: calc(50% - 10px);
+  position: relative;
+  background-color: rgb(60, 150, 255);
+  margin-right: -18px;
+}
+
+.loader > *:nth-child(1) {
+  animation: load 1s linear 0s infinite;
+}
+.loader > *:nth-child(2) {
+  animation: load 1s linear -.05s infinite;
+  background-color: #aaaaaa;
+}
+.loader > *:nth-child(3) {
+  animation: load 1s linear -.5s infinite;
+}
+.loader > *:nth-child(4) {
+  animation: load 1s linear -.55s infinite;
+  background-color: #aaaaaa;
+}
+
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(10px);
+  transition-duration: 1s;
+}
+
+canvas.running {
+  filter: blur(0px);
+  transition-duration: .6s;
+}
+
+
+
+
+
+/* INTERFACES
+==============================*/
+
+#blackContainer {
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0,0,0,0.7);
+  z-index: 2;
+  transition-duration: .3s;
+  transition-timing-function: ease-out;
+}
+
+#blackContainer.show {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: .5s;
+}
+
+#blackContainer > .interface {
+  display: none;
+}
+
+#blackContainer > .interface.show {
+  display: inline-block;
+}
+
+.interface {
+  width: 50%;
+  vertical-align: middle;
+  text-align: center;
+}
+
+
+/* NICKNAME */
+
+#nicknameContainer {
+  width: 1000px;
+  max-width: 90%;
+}
+
+#nicknameContainer[data-state="nickname"] #nicknameNickname {
+  opacity: 1;
+}
+
+#nicknameContainer #nicknameNickname {
+  opacity: 0.1;
+  transition-duration: 700ms;
+}
+
+#nicknameContainer #nicknameNickname .caption {
+  opacity: 0;
+  font-size: 1.4em;
+  transition-duration: 600ms;
+  transition-timing-function: ease-in-out;
+}
+
+#nicknameContainer[data-state="nickname"] #nicknameNickname .caption {
+  opacity: 1;
+  transition-duration: 1.5s;
+  transition-delay: 300ms;
+}
+
+.inputContainer {
+  width: 270px;
+  max-width: 100%;
+  display: inline-block;
+  margin: 0.5em 0;
+}
+
+.inputBase {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: rgba(128, 128, 128, 0.2);
+  text-align: center;
+}
+.inputBase::after {
+  content: "";
+  width: 0;
+  display: inline-block;
+  background-color: rgb(60, 150, 255);
+  height: 100%;
+  transition-duration: 100ms;
+}
+input:focus + .inputBase::after {
+  width: 100%;
+  animation-name: glow;
+  animation-duration: 2s;
+  animation-direction: alternate;
+  animation-iteration-count: infinite;
+}
+input[readonly]:focus + .inputBase::after {
+  width: 0%;
+}
+@keyframes glow {
+  0% { box-shadow: 0 0 30px 1px rgba(50, 119, 255, 1) }
+  50% { box-shadow: 0 0 20px 1px rgba(28, 88, 206, 0.6); }
+  100% { box-shadow: 0 0 30px 1px rgba(50, 119, 255, 1) }
+}
+
+.placeholder {
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: bold;
+  color: #888;
+  transform: translateY(calc(-1em + -10px));
+  margin-top: 2px;
+  transition-duration: 100ms;
+  pointer-events: none;
+}
+input[data-invalid="true"] + .inputBase::after {
+  background-color: rgb(250, 60, 60);
+}
+input[data-invalid="true"]:focus + .inputBase::after {
+  animation-name: glow-red;
+}
+@keyframes glow-red {
+  0% { box-shadow: 0 0 30px 1px rgba(250, 50, 30, 1) }
+  50% { box-shadow: 0 0 20px 1px rgba(200, 30, 30, 0.6); }
+  100% { box-shadow: 0 0 30px 1px rgba(250, 50, 30, 1) }
+}
+input[data-invalid="true"] + .inputBase + .placeholder {
+  color: #e44;
+}
+input:focus + .inputBase + .placeholder, input[data-empty="false"] + .inputBase + .placeholder {
+  transform: initial;
+}
+
+#nicknameAlreadyTaken {
+  display: none;
+}
+input[data-already-taken="true"] + .inputBase + .placeholder > #nicknameAlreadyTaken {
+  display: inline;
+}
+
+
+#nicknameContainer hr {
+  width: 0;
+  transition-duration: 1s;
+  transition-delay: 600ms;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0;
+  display: none;
+}
+
+#nicknameContainer[data-state="nickname"] hr {
+  width: 0;
+  opacity: 0;
+}
+
+div#nicknameContainer[data-state] hr {
+  width: 100%;
+  opacity: 1;
+}
+
+
+
+#nicknameUser {
+  /*margin-top: 50px;*/
+  width: 100%;
+  height: 400px;
+}
+
+#nicknameUser > div {
+  height: 100%;
+  position: relative;
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 500ms;
+}
+
+.row {
+  display: flex;
+  width: 100%;
+}
+
+#nicknameLogIn { top: -100%; }
+#nicknameBack { top: -200%; }
+#nicknameBackConnected { top: -300%; }
+
+#nicknameContainer[data-state="signup"] #nicknameSignUp,
+#nicknameContainer[data-state="login"] #nicknameLogIn,
+#nicknameContainer[data-state="back"] #nicknameBack,
+#nicknameContainer[data-state="backConnected"] #nicknameBackConnected
+{
+  opacity: 1;
+  pointer-events: initial;
+}
+
+#nicknameUser input {
+  font-size: 20px;
+  font-weight: normal;
+}
+
+#nicknameUser input[type="submit"] {
+  font-size: 16px;
+  font-weight: bold;
+  width: initial;
+  right: 0;
+  position: relative;
+  float: right;
+  padding: 0.2em 1em;
+}
+
+#nicknameUser .col {
+  width: 100%;
+  display: block;
+  font-size: 20px;
+  vertical-align: top;
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 1.5em;
+}
+
+#nicknameUser > div > .caption {
+  width: 100%;
+  font-size: 1.5em;
+  margin-bottom: 1em;
+  transition-delay: 300ms;
+  transition-duration: 2s;
+  transition-timing-function: ease-out;
+}
+
+#nicknameUser > div > .caption > span {
+  font-weight: bold;
+}
+
+#nicknameContainer #nicknameUser > div > .caption { opacity: 0; }
+#nicknameContainer[data-state="nickname"] #nicknameUser > div > .caption { opacity: 0; }
+div#nicknameContainer[data-state] #nicknameUser > div > .caption { opacity: 1; }
+
+#nicknameUser .col .caption {
+  font-weight: bold;
+}
+
+#nicknameUser button {
+  margin-top: 50px;
+}
+
+
+
+/* LOADING */
+
+#loadingContainer {
+}
+
+.loadingLabel {
+  display: block;
+  color: white;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+#loadingBarContainer {
+  display: inline-block;
+  width: 60%;
+  height: 8px;
+  border: 1px white solid;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+#loadingBar {
+  display: inline-block;
+  height: 100%;
+  width: 0px;
+  background-color: white;
+  transition-duration: 200ms;
+}
+
+
+
+/* RECONNECTING */
+
+#reconnectingContainer {
+}
+
+.reconnectingLabel {
+  display: block;
+  color: white;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+
+
+/* MENU */
+
+#menuContainer {
+  width: 100%;
+}
+
+#menuContainer .col {
+  display: inline-block;
+  width: 49%;
+  vertical-align: middle;
+  padding: 8%;
+}
+
+#menuButtons {
+  text-align: left;
+  position: relative;
+}
+
+#menuButtons button {
+  box-shadow: none;
+  font-size: 25px;
+  margin: 10px 0;
+  opacity: 0.7;
+  transition-duration: .14s;
+}
+
+#menuButtons button.disabled {
+  opacity: 0.4;
+}
+
+#menuButtons button.disabled:hover, #menuButtons button.disabled:focus {
+  transform: scale(1);
+  opacity: 0.4;
+}
+
+#menuButtons button:hover, #menuButtons button:focus {
+  transform-origin: left;
+  transform: scale(1.1);
+  transition-duration: 80ms;
+  opacity: 1;
+  background-color: transparent;
+}
+
+#menuButtons .menuSelect {
+  position: absolute;
+  z-index: 1;
+  top: 0px;
+  left: -15px;
+}
+
+#menuButtons .menuSelect.circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #3C96FF;
+  transition-duration: 500ms;
+  animation: infiniteLoop1 1s linear 0s infinite;
+}
+
+#menuButtons .menuSelect.square {
+  width: 7px;
+  height: 7px;
+  background-color: #eee;
+  transition-duration: 550ms;
+  transition-delay: 20ms;
+  animation: infiniteLoop2 1.2s linear 0s infinite;
+}
+
+
+#menuPlayerList {
+  max-height: 100%;
+  overflow: auto;
+}
+
+#menuPlayerList .player {
+  display: inline-block;
+  width: 70px;
+  margin: 1em;
+  vertical-align: top;
+}
+
+#menuPlayerList .player .imageContainer {
+  height: 3em;
+  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+#menuPlayerList .player .imageContainer img {
+  max-width: 70%;
+  max-height: 100%;
+}
+
+#menuPlayerList .player.rotate img {
+  animation: roll 2s linear 0s infinite;
+}
+
+#menuPlayerList .player .nickname {
+  word-wrap: break-word;
+  margin-top: 0.6em;
+}
+
+
+
+
+/* TOUCH SCREEN
+==============================*/
+
+#touchContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: none;
+}
+
+#touchContainer div {
+  display: inline-block;
+  position: fixed;
+  width: 80px;
+  height: 80px;
+  border-radius: 100%;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+  border: 3px rgba(0, 0, 0, 0.1);
+}
+#touchContainer div.touchTouched {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+#touchUp {
+  left: 80px;
+  bottom: 150px;
+  background-image: url('./img/touchscreen/arrowUp.png');
+}
+#touchLeft {
+  left: 10px;
+  bottom: 80px;
+  background-image: url('./img/touchscreen/arrowLeft.png');
+}
+#touchDown {
+  left: 80px;
+  bottom: 10px;
+  background-image: url('./img/touchscreen/arrowDown.png');
+}
+#touchRight {
+  left: 150px;
+  bottom: 80px;
+  background-image: url('./img/touchscreen/arrowRight.png');
+}
+#touchAction1 {
+  right: 20px;
+  bottom: 80px;
+  background-image: url('./img/touchscreen/action1.png');
+}
+#touchAction2 {
+  right: 100px;
+  bottom: 30px;
+  background-image: url('./img/touchscreen/action2.png');
+}
+#touchContainer #touchFullscreen {
+  width: 60px;
+  height: 60px;
+  top: 10px;
+  right: 10px;
+  background-image: url('./img/touchscreen/fullscreen.png');
+}
+
+
+
+
+
+
+/* CHATBOX
+==============================*/
+
+#chatbox {
+  position: fixed;
+  left: 10px;
+  bottom: 10px;
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 1px;
+  padding: 10px;
+  width: 30%;
+  color: rgba(200,200,200,1);
+  font-family: Raleway;
+  font-size: 0.95em;
+  transition-duration: 600ms;
+  z-index: 1;
+  border: 2px rgba(255,255,255,0) solid;
+}
+
+#chatbox * {
+  font-family: Raleway;
+}
+
+#chatbox.displayMsg[data-focus=true] {
+  background-color: rgba(0,0,0,0.7);
+  border: 2px rgba(255,255,255,0.4) solid;
+}
+
+#chatbox.displayMsg {
+  background-color: rgba(0,0,0,0.6);
+  transition-duration: 300ms;
+}
+
+#chatbox .preInput {
+  font-family: Raleway;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+#chatbox input {
+  background-image: none;
+  background-color: rgba(0,0,0,0);
+  outline: none;
+  border: none;
+  width: calc(100% - 30px);
+  color: white;
+  font-family: Raleway;
+  font-weight: normal;
+  font-size: 14px;
+  text-align: left;
+  padding: 0.3em 0;
+  padding-left: 4px;
+  font-size: 0.8em;
+}
+
+#chatbox #chatboxMessages .message {
+  max-width: 100%;
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+#chatbox #chatboxMessages .message.messageJoin {
+  font-style: italic;
+  color: rgb(170, 180, 200);
+}
+
+#chatbox #chatboxMessages .message.messageLeave {
+  font-style: italic;
+  color: rgb(150, 160, 180);
+}
+
+#chatbox #chatboxMessages .message.messageWelcome {
+  font-weight: bold;
+  color: rgb(60, 150, 255);
+}
+
+#chatbox #chatboxMessages .nickname {
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+#chatbox #chatboxMessages .message svg, #chatbox #chatboxMessages .message img {
+  fill: currentColor;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+}
+
+#chatbox #chatboxMessages {
+  transition-duration: 300ms;
+  overflow: hidden;
+}
+
+#chatbox.displayMsg #chatboxMessages {
+  animation-name: messagesDisplay;
+  animation-duration: 300ms;
+  animation-fill-mode: both;
+  -webkit-animation-name: messagesDisplay;
+  -webkit-animation-duration: 300ms;
+  -webkit-animation-fill-mode: both;
+  transform: scaleY(1) translateY(0);
+  transition-property: none;
+}
+
+#chatbox.hideMsg #chatboxMessages {
+  animation-name: messagesHide;
+  animation-duration: 600ms;
+  animation-fill-mode: both;
+  -webkit-animation-name: messagesHide;
+  -webkit-animation-duration:600ms;
+  -webkit-animation-fill-mode: both;
+  transform: scaleY(0) translateY(10%);
+  transition-property: transform, height;
+}
+
+
+@keyframes messagesDisplay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@-webkit-keyframes messagesDisplay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes messagesHide {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@-webkit-keyframes messagesHide {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+
+
+@keyframes load {
+  0% { transform: rotate(0deg) translateX(10px); }
+  50% { transform: rotate(180deg) translateX(20px); }
+  100% { transform: rotate(360deg) translateX(10px); }
+}
+
+/*@keyframes infiniteLoop {
+  0% { transform: translate(0px, 0px); }
+  7% { transform: translate(-2px, 2px); }
+  15% { transform: translate(-3px, 2px); }
+  23% { transform: translate(-5px, 0px); }
+  31% { transform: translate(-3px, -2px); }
+  40% { transform: translate(-2px, -2px); }
+  49% { transform: translate(0px, 0px); }
+  58% { transform: translate(2px, 2px); }
+  66% { transform: translate(3px, 2px); }
+  75% { transform: translate(5px, 0px); }
+  84% { transform: translate(3px, -2px); }
+  93% { transform: translate(2px, -2px); }
+  100% { transform: translate(0px, 0px); }
+}*/
+
+@keyframes infiniteLoop1 {
+  0% { transform-origin: 20% 50%; transform: translate(0px, 0px) rotate(0deg); }
+  50% { transform-origin: 20% 50%; transform: translate(3px, 2px) rotate(180deg); }
+  100% { transform-origin: 20% 50%; transform: translate(0px, 0px) rotate(360deg); }
+}
+
+@keyframes roll {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes infiniteLoop2 {
+  0% { transform-origin: 20% 50%; transform: translate(3px, 2px) rotate(0deg); }
+  50% { transform-origin: 20% 50%; transform: translate(0px, 0px) rotate(180deg); }
+  100% { transform-origin: 20% 50%; transform: translate(3px, 2px) rotate(360deg); }
+}

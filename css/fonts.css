@@ -1,0 +1,96 @@
+
+/* Josefin Sans */
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-Thin.ttf');
+    font-weight: 100;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-ThinItalic.ttf');
+    font-weight: 100;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-Light.ttf');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-LightItalic.ttf');
+    font-weight: 300;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-Regular.ttf');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-Italic.ttf');
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-SemiBold.ttf');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-SemiBoldItalic.ttf');
+    font-weight: 600;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-Bold.ttf');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Josefin Sans Backup';
+    src: url('../fonts/josefin sans/JosefinSans-BoldItalic.ttf');
+    font-weight: 700;
+    font-style: italic;
+}
+
+
+
+
+
+/* Raleway */
+
+@font-face {
+    font-family: 'Raleway';
+    src: url('../fonts/raleway/regular/raleway-regular-webfont.eot');
+    src: url('../fonts/raleway/regular/raleway-regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/raleway/regular/raleway-regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Raleway';
+    src: url('../fonts/raleway/bold/raleway-bold-webfont.eot');
+    src: url('../fonts/raleway/bold/raleway-bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/raleway/bold/raleway-bold-webfont.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}

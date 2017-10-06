@@ -1,0 +1,8 @@
+{
+	"type": "Rectangle",
+	"width": 10,
+	"height": 10,
+	"options": {
+		"restitution": 0.5
+	}
+}

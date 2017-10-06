@@ -9,34 +9,38 @@
 		</style>
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=0.6, user-scalable=0">
+		<link href="https://fonts.googleapis.com/css?family=Josefin+Sans:100,100i,300,300i,400,400i,600,600i,700,700i" rel="stylesheet">
+		<link rel="stylesheet" type="text/css" href="./modules/font-awesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="./css/index.css"/>
+		<link rel="stylesheet" href="./css/fonts.css"/>
 	</head>
 	<body style="display: none;">
-		<script src="./socket.io-client/socket.io.js"></script>
+		<!-- <script src="./socket.io-client/socket.io.js"></script> -->
+		<script src="./modules/socket.io.slim.js"></script>
 		<script src="./modules/pixi.min.js"></script>
 		<script src="./modules/physicsjs-full.js"></script>
 
 		<script src="./js/modulo.js"></script>
+		<script src="./js/eventsHandler.abstract.js"></script>
 		<script src="./js/sha1.js"></script>
 		<script src="./js/cookies.js"></script>
 		<script src="./js/player.js"></script>
 		<script src="./js/audioPlayer.js"></script>
 		<script src="./js/fileLoader.js"></script>
-		<script src="./js/interface.js"></script>
 		<script src="./js/gamemodes.js"></script>
 		<script src="./js/chatbox.js"></script>
 		<script src="./js/entity.js"></script>
 		<script src="./js/world.js"></script>
 		<script src="./js/view.js"></script>
+		<script src="./js/interface.js"></script>
 		<script src="./js/synchronizer.js"></script>
 		<script src="./index.js"></script>
 
-		<link rel="stylesheet" href="./index.css"/>
 
 		<div id="debug" style="position: fixed; top: 0; left: 0; z-index: 999; color: white; font-size: 1.5em;"></div>
 
 
 		<div id="blackContainer">
-			<div class="val"></div>
 
 
 			<div id="nicknameContainer" class="interface">
@@ -59,7 +63,7 @@
 						</div>
 						<div class="row">
 							<div class="col">
-								<button class="nicknameResetButton">◄ Back</button>
+								<button class="nicknameResetButton"><div class="arrow">◄</div><div class="label">Back</div></button>
 							</div>
 							<div class="col invert">
 								<form action="#" id="nicknameSignUpForm">
@@ -72,7 +76,7 @@
 									<div class="inputContainer">
 										<input id="" name="password" autocomplete="off" type="password" maxlength="100"/>
 										<div class="inputBase"></div>
-										<div class="placeholder">Password (6 char or +)</div>
+										<div class="placeholder">Password (6+ chars)</div>
 									</div>
 									<div class="inputContainer">
 										<input type="submit" value="Sign up" />
@@ -80,7 +84,7 @@
 								</form>
 							</div>
 							<div class="col">
-								<button class="nicknameStartButton">Later, let me play! ►</button>
+								<button class="nicknameStartButton"><div class="label">Later, let me play!</div><div class="arrow">►</div></button>
 							</div>
 						</div>
 					</div>
@@ -91,7 +95,7 @@
 						</div>
 						<div class="row">
 							<div class="col">
-								<button class="nicknameResetButton">◄ No, sorry</button>
+								<button class="nicknameResetButton"><div class="arrow">◄</div><div class="label">No, sorry</div></button>
 							</div>
 							<div class="col invert">
 								<form action="#" id="nicknameLogInForm">
@@ -106,7 +110,7 @@
 								</form>
 							</div>
 							<div class="col">
-								<button class="nicknameStartButton">No, let me play anyway ►</button>
+								<button class="nicknameStartButton"><div class="label">No, let me play anyway</div><div class="arrow">►</div></button>
 							</div>
 						</div>
 					</div>
@@ -117,7 +121,7 @@
 						</div>
 						<div class="row">
 							<div class="col">
-								<button class="nicknameResetButton">◄ Reset your progress</button>
+								<button class="nicknameResetButton"><div class="arrow">◄</div><div class="label">Reset my progress</div></button>
 							</div>
 							<div class="col invert">
 								<form action="#" id="nicknameBackForm">
@@ -143,7 +147,7 @@
 								</form>
 							</div>
 							<div class="col">
-								<button class="nicknameStartButton">Later, resume the game! ►</button>
+								<button class="nicknameStartButton"><div class="label">Later, resume the game!</div><div class="arrow">►</div></button>
 							</div>
 						</div>
 					</div>
@@ -154,10 +158,10 @@
 						</div>
 						<div class="row">
 							<div class="col">
-								<button class="nicknameResetButton">◄ Log out</button>
+								<button class="nicknameResetButton"><div class="arrow">◄</div><div class="label">Log out</div></button>
 							</div>
 							<div class="col">
-								<button class="nicknameStartButton">Enter Sekai ►</button>
+								<button class="nicknameStartButton"><div class="label">Enter Sekai</div><div class="arrow">►</div></button>
 							</div>
 						</div>
 					</div>
@@ -168,9 +172,33 @@
 
 
 			<div id="loadingContainer" class="interface">
-				<div id="loadingLabel">Entering the world...</div>
+				<div class="loadingLabel">Entering the world...</div>
 				<div id="loadingBarContainer">
 					<div id="loadingBar"></div>
+				</div>
+			</div>
+
+
+
+			<div id="reconnectingContainer" class="interface">
+				<!--<div class="reconnectingLabel">Connection lost. Reconnecting...</div>-->
+				<div class='loader'><i></i><i></i><i></i><i></i></div>
+			</div>
+
+
+
+			<div id="menuContainer" class="interface">
+				<div class="col">
+					<div id="menuButtons">
+						<div class="menuSelect square"></div>
+						<div class="menuSelect circle"></div>
+						<button>Resume</button>
+						<button class="disabled">Options</button>
+						<button>Quit</button>
+					</div>
+				</div>
+				<div class="col">
+					<div id="menuPlayerList"></div>
 				</div>
 			</div>
 

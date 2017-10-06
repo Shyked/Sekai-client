@@ -1,0 +1,25 @@
+{
+  "name": "sekai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp saas:watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shyked/sekai-client.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shyked/sekai-client/issues"
+  },
+  "homepage": "https://github.com/Shyked/sekai-client#readme",
+  "dependencies": {
+    "gulp-sass": "^3.1.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}

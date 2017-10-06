@@ -113,6 +113,14 @@ Chatbox.emojis = {
     "smile": "png"
 };
 
+Chatbox.prototype.show = function() {
+    this.chatbox.style.display = '';
+};
+
+Chatbox.prototype.hide = function() {
+    this.chatbox.style.display = 'none';
+};
+
 Chatbox.prototype.mouseOver = function() {
     this.isMouseOver = true;
 };
@@ -312,6 +320,11 @@ Chatbox.prototype.getIcon = function(iconName, callback) {
         chatbox.icons[iconName] = svg;
         callback(svg, iconName);
     });
+};
+
+
+Chatbox.prototype.debug = function(msg) {
+    this.addMessage(msg, "DEBUG", {r: 190, g: 190, b: 190}, 0, "");
 };
 
 

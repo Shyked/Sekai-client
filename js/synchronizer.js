@@ -6,6 +6,7 @@
 	var AudioPlayer = window.AudioPlayer;
 	var FileLoader = window.FileLoader;
 	var Interface = window.Interface;
+	var EventsHandler = window.EventsHandler;
 
 	var LAG = 0;
 	var RAND_LAG = 0;
@@ -16,14 +17,38 @@
 	 */
 	var Synchronizer = function(view) {
 		this.view = view;
-		Synchronizer = this;
+		var sync = this;
 
-		this.socket = io.connect(NODE_URL);
+		this.socket = io.connect(NODE_URL, {
+			"timeout": 1000
+		});
+
+		this.states = [
+			"disconnected",
+			"connected",
+			"ingame",
+			"reconnecting"
+		];
 
 		this.player = new Player();
 
+		this.initServerEvents();
+		this.initEvents();
 
+		this.setState("disconnected");
+
+    this.sendParams();
+	};
+	Synchronizer.prototype = new EventsHandler();
+
+
+	/*======*/
+	/* INIT */
+	/*======*/
+
+	Synchronizer.prototype.initServerEvents = function() {
 		var that = this;
+		this.socket.on('connect', function() { that.setState('connected') });
 		this.socket.on('askNickname',function(content){setTimeout(function(){ that.askNickname(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('askSignUp',function(content){setTimeout(function(){ that.askSignUp(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('askLogIn',function(content){setTimeout(function(){ that.askLogIn(content) },Math.random()*RAND_LAG+LAG)});
@@ -36,48 +61,92 @@
 		this.socket.on('entity',function(content){setTimeout(function(){ that.entity(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('removeEntity',function(content){setTimeout(function(){ that.removeEntity(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('definePlayer',function(content){setTimeout(function(){ that.definePlayer(content) },Math.random()*RAND_LAG+LAG)});
-		this.socket.on('error',function(content){setTimeout(function(){ that.error(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('hideEntities',function(content){setTimeout(function(){ that.hideEntities(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('serverError',function(content){setTimeout(function(){ that.serverError(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('debug',function(content){setTimeout(function(){ that.debug(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('chatboxMessage',function(content){setTimeout(function(){ that.chatboxMessage(content) },Math.random()*RAND_LAG+LAG)});
 		this.socket.on('audio',function(content){setTimeout(function(){ that.audio(content) },Math.random()*RAND_LAG+LAG)});
+		this.socket.on('reconnect_attempt', function() {
+			that.setState("reconnecting");
+		});
+	};
 
+	Synchronizer.prototype.initEvents = function() {
+		var sync = this;
+
+		// State
+		this.addEventListener('stateChange', function(sync, state) {
+			console.log(state);
+			switch (state) {
+				case "disconnected":
+					Chatbox.hide();
+					break;
+				case "connected":
+					Chatbox.hide();
+					break;
+				case "ingame":
+					Chatbox.show();
+					if (sync.sendPlayerInterval) clearInterval(sync.sendPlayerInterval);
+					sync.sendPlayerInterval = setInterval(function(){sync.sendPlayer();}, 2000);
+					break;
+				case "reconnecting":
+					Interface.display("reconnecting");
+					break;
+			}
+		})
 
 		// User inputs
-	    view.addEventListener('mouseleftdown', function(view, e) {
+    view.addEventListener('mouseleftdown', function(view, e) {
 			var x = (e.offsetX != undefined) ? e.offsetX : e.layerX - e.target.offsetLeft;
 			var y = (e.offsetY != undefined) ? e.offsetY : e.layerY - e.target.offsetTop;
-	    	var pos = view.screenToWorldCoords({x: x, y: y})
-	    	Synchronizer.mouseDown(pos.x, pos.y);
-	    });
+    	var pos = view.screenToWorldCoords({x: x, y: y})
+    	sync.mouseDown(pos.x, pos.y);
+    });
 
-	    view.addEventListener('mousemiddledown', function(view, e) {
-	    	Synchronizer.restartWorld();
-	    });
+    view.addEventListener('mousemiddledown', function(view, e) {
+    	sync.restartWorld();
+    });
 
-	    view.addEventListener('keydown', function(view, key) {
-	    	Synchronizer.keyDown(key);
-	    });
-	    view.addEventListener('keyup', function(view, key) {
-	    	Synchronizer.keyUp(key);
-	    });
-	    view.addEventListener('touchstart', function(view, e) {
-	    	Synchronizer.touchStart(e);
-	    });
+    view.addEventListener('keydown', function(view, key) {
+    	sync.keyDown(key);
+    });
+    view.addEventListener('keyup', function(view, key) {
+    	sync.keyUp(key);
+    });
+    view.addEventListener('touchstart', function(view, e) {
+    	sync.touchStart(e);
+    });
 
-
-	    Chatbox.addEventListener('send', function(chatbox, text) {
-	    	Synchronizer.sendChatboxMessage(text);
-	    });
-
-
-	    this.sendParams();
-
-
-
-	    // Intervals
-	    this.sendPlayerInterval = setInterval(function(){that.sendPlayer();}, 1000);
-
+    // Chatbox
+    Chatbox.addEventListener('send', function(chatbox, text) {
+    	sync.sendChatboxMessage(text);
+    });
 	};
+
+
+	/*=======*/
+	/* STATE */
+	/*=======*/
+
+	Synchronizer.prototype.getState = function() {
+		return this.states[this.state];
+	};
+
+	Synchronizer.prototype.setState = function(state) {
+		var index = this.states.indexOf(state);
+		if (index != -1) {
+			if (this.state != index) {
+				this.state = index;
+				this.triggerEvent('stateChange', state);
+			}
+		}
+		else console.log('Unknown state: ' + state);
+	};
+
+
+	/*===============*/
+	/* LOGIN PROCESS */
+	/*===============*/
 
 	Synchronizer.prototype.sendParams = function() {
 		var get = getURLParams();
@@ -107,8 +176,11 @@
 
 	Synchronizer.prototype.askNickname = function(content) {
 		var token = window.localStorage.token;
-		if (this.player.world) {
-			// Direct log
+		if (this.player.world && token && content.error != "UNKNOWN_TOKEN") {
+			this.socket.emit('token', {
+				"token": token,
+				"askedWorld": this.player.world.id
+			});
 		}
 		else {
 			if (token && content.error != "UNKNOWN_TOKEN") {
@@ -204,24 +276,41 @@
 
 	Synchronizer.prototype.askLogIn = function(content) {
 		Interface.modify('nickname', { 'state': 'login' });
+		if (content.error == 'WRONG_PASSWORD') {
+			var pwdInput = document.getElementById('nicknameLogInForm').password;
+			pwdInput.setAttribute('data-invalid', 'true');
+			pwdInput.focus();
+		}
+		else {
+			var pwdInput = document.getElementById('nicknameLogInForm').password;
+			pwdInput.setAttribute('data-invalid', '');
+		}
 	};
 
 	Synchronizer.prototype.askBack = function(content) {
-		this.displayNicknameInterface();
 		var connected = content.connected;
 		var nickname = content.nickname;
 		this.player.nickname = nickname;
-		if (connected) {
-			Interface.modify('nickname', {
-				'state': 'backConnected',
-				'nickname': nickname
+		if (Interface.current == "reconnecting" && synchronizer.player.world) {
+			synchronizer.socket.emit('start', {
+				"token": window.localStorage.token,
+				"askedWorld": synchronizer.player.world.id
 			});
 		}
 		else {
-			Interface.modify('nickname', {
-				'state': 'back',
-				'nickname': nickname
-			});
+			this.displayNicknameInterface();
+			if (connected) {
+				Interface.modify('nickname', {
+					'state': 'backConnected',
+					'nickname': nickname
+				});
+			}
+			else {
+				Interface.modify('nickname', {
+					'state': 'back',
+					'nickname': nickname
+				});
+			}
 		}
 	};
 
@@ -229,23 +318,28 @@
 		window.localStorage.token = content.token;
 	};
 
-	Synchronizer.prototype.playerJoin = function(content) {
-		var player = content;
-		this.view.newPlayer(player);
+	Synchronizer.prototype.disconnect = function() {
+		this.stopWorld();
+		this.socket.disconnect();
+		this.socket.connect();
 	};
 
-	Synchronizer.prototype.playerLeave = function(content) {
-		var player = content;
-		this.view.clearPlayer(player.id);
-	};
 
-	Synchronizer.prototype.defineWorld = function(content) {
+	/*===========*/
+	/* SET WORLD */
+	/*===========*/
+
+	Synchronizer.prototype.stopWorld = function() {
 		Interface.display(null);
 
 		this.view.stopRender();
 		if (this.player.world) Worlds.delete(this.player.world.id);
 		this.player.clear();
 		this.view.clear();
+	};
+
+	Synchronizer.prototype.defineWorld = function(content) {
+		this.stopWorld();
 
 		var worldHash = content;
 
@@ -276,6 +370,19 @@
 		FileLoader.loadWorld(worldHash.world.id);
 	};
 
+	Synchronizer.prototype.definePlayer = function(content) {
+		var playerParams = content;
+		this.player.world.updateEntities([playerParams.entity]);
+		this.view.setFocus(playerParams.entity.id);
+		this.player.entity = this.player.world.entities[playerParams.entity.id];
+		this.setState('ingame');
+	};
+
+
+	/*=======================*/
+	/* KEEP WORLD UP-TO-DATE */
+	/*=======================*/
+
 	/**
 	 * updateWorld()
 	 * When the server send an entire world to the Client
@@ -283,22 +390,15 @@
 	 * @param content The JSON String containing the world
 	 */
 	Synchronizer.prototype.updateWorld = function(content) {
-
 		var worldHash = content;
 		var world = Worlds.get(worldHash.id);
 		if (world) {
 			world.update(worldHash);
+			var entities = [];
+			for (var idE in world.entities) {
+				entities.push(idE);
+			}
 		}
-	};
-
-	Synchronizer.prototype.definePlayer = function(content) {
-		var playerParams = content;
-		this.player.world.updateEntities([playerParams.entity]);
-		this.view.setFocus(playerParams.entity.id);
-		this.player.entity = this.player.world.entities[playerParams.entity.id];
-		/*this.playerParams.jumpPower = playerParams.jumpPower;
-		this.playerParams.speed = playerParams.speed;*/
-		//this.world.softUpdates[playerParams.entityId] = true;
 	};
 
 	/**
@@ -315,9 +415,44 @@
 	Synchronizer.prototype.removeEntity = function(content) {
 		this.player.world.removeEntity(content);
 	};
+	
+	Synchronizer.prototype.sendPlayer = function() {
+		if (this.player.world) {
+			var player = this.player.entity;
+			if (player && !player.sleep()) {
+				this.socket.emit('player', {
+					"worldId": this.player.world.id,
+					"player": player.export()
+				});
+			}
+		}
+	};
+
+	Synchronizer.prototype.hideEntities = function(content) {
+		if (this.player.world) {
+			for (var id in content.entities) {
+				var idE = content.entities[id]
+				if (this.player.world.entities[idE]) this.player.world.removeEntity(idE);
+			}
+		}
+	};
+
+	Synchronizer.prototype.playerJoin = function(content) {
+		var player = content;
+		this.view.newPlayer(player);
+	};
+
+	Synchronizer.prototype.playerLeave = function(content) {
+		var player = content;
+		this.view.clearPlayer(player.id);
+	};
 
 
-	Synchronizer.prototype.error = function(content) {
+	/*======*/
+	/* LOGS */
+	/*======*/
+
+	Synchronizer.prototype.serverError = function(content) {
 		console.warn("Error from the server : " + content);
 	};
 
@@ -326,22 +461,30 @@
 	};
 
 
+	/*=============*/
+	/* USER INPUTS */
+	/*=============*/
 
 	Synchronizer.prototype.mouseDown = function(x, y) {
 		this.socket.emit('mousedown', {x: x, y: y});
 	};
 
 	Synchronizer.prototype.keyDown = function(key) {
-		if (this.player.entity) {
-			// if (key == "R") this.socket.emit('restartWorld', "");
+		// If client-sided command
+		if (Interface.current) {
+			Interface.keyDown(key);
+		}
+		else if ((key == "ENTER" || key == "/") && Chatbox) {
+			if (this.getState() == "ingame") Chatbox.enter();
+		}
+		else if (key == "ESCAPE") {
+			if (this.getState() == "ingame") this.toggleMenu();
+		}
 
-			// If client-sided command
-			if ((key == "ENTER" || key == "/") && Chatbox) {
-				Chatbox.enter();
-			}
 
-			// If not, send the key to the server
-			else {
+		// If not, send the key to the server
+		else {
+			if (this.getState() == "ingame") {
 				this.socket.emit('keydown', {
 					"key": key,
 					"entity": this.player.entity.export()
@@ -350,8 +493,18 @@
 			}
 		}
 	};
+
 	Synchronizer.prototype.keyUp = function(key) {
-		if (this.player.entity) {
+		if (Interface.current) {
+			Interface.keyUp(key);
+		}
+		else if ((key == "ENTER" || key == "/") && Chatbox) {
+			
+		}
+		else if (key == "ESCAPE") {
+			
+		}
+		else if (this.getState() == "ingame") {
 			this.socket.emit('keyup', {
 				"key": key,
 				"entity": this.player.entity.export()
@@ -362,7 +515,8 @@
 
 	Synchronizer.prototype.touchStart = function(e) {
 		var synchronizer = this;
-		var touchStart = function(action, button) {
+		var touchStart = function(action, button, e) {
+			navigator.vibrate(10);
 			if (action == "FULLSCREEN") {
 				synchronizer.view.fullscreen();
 			}
@@ -372,35 +526,33 @@
 				}
 			}
 			button.className = "touchTouched";
+			e.preventDefault();
+			return false;
 		};
-		var touchEnd = function(action, button) {
-			if (action == "FULLSCREEN") {
-
-			}
-			else {
-				for (var id in synchronizer.player.keys) {
-					if (synchronizer.player.keys[id] == action) synchronizer.keyUp(id);
-				}
+		var touchEnd = function(action, button, e) {
+			for (var id in synchronizer.player.keys) {
+				if (synchronizer.player.keys[id] == action) synchronizer.keyUp(id);
 			}
 			button.className = "";
+			e.preventDefault();
+			return false;
 		};
 
 		if (document.getElementById('touchContainer').style.display == "") {
 			document.getElementById('touchContainer').style.display = "block";
-			document.getElementById('touchUp').ontouchstart = function() { touchStart("UP", this); };
-			document.getElementById('touchUp').ontouchend = function() { touchEnd("UP", this); };
-			document.getElementById('touchLeft').ontouchstart = function() { touchStart("LEFT", this); };
-			document.getElementById('touchLeft').ontouchend = function() { touchEnd("LEFT", this); };
-			document.getElementById('touchDown').ontouchstart = function() { touchStart("DOWN", this); };
-			document.getElementById('touchDown').ontouchend = function() { touchEnd("DOWN", this); };
-			document.getElementById('touchRight').ontouchstart = function() { touchStart("RIGHT", this); };
-			document.getElementById('touchRight').ontouchend = function() { touchEnd("RIGHT", this); };
-			document.getElementById('touchAction1').ontouchstart = function() { touchStart("ACTION1", this); };
-			document.getElementById('touchAction1').ontouchend = function() { touchEnd("ACTION1", this); };
-			document.getElementById('touchAction2').ontouchstart = function() { touchStart("ACTION2", this); };
-			document.getElementById('touchAction2').ontouchend = function() { touchEnd("ACTION2", this); };
-			document.getElementById('touchFullscreen').ontouchstart = function() { touchStart("FULLSCREEN", this); };
-			document.getElementById('touchFullscreen').ontouchend = function() { touchEnd("FULLSCREEN", this); };
+			document.getElementById('touchUp').ontouchstart = function(e) { return touchStart("UP", this, e); };
+			document.getElementById('touchUp').ontouchend = function(e) { return touchEnd("UP", this, e); };
+			document.getElementById('touchLeft').ontouchstart = function(e) { return touchStart("LEFT", this, e); };
+			document.getElementById('touchLeft').ontouchend = function(e) { return touchEnd("LEFT", this, e); };
+			document.getElementById('touchDown').ontouchstart = function(e) { return touchStart("DOWN", this, e); };
+			document.getElementById('touchDown').ontouchend = function(e) { return touchEnd("DOWN", this, e); };
+			document.getElementById('touchRight').ontouchstart = function(e) { return touchStart("RIGHT", this, e); };
+			document.getElementById('touchRight').ontouchend = function(e) { return touchEnd("RIGHT", this, e); };
+			document.getElementById('touchAction1').ontouchstart = function(e) { return touchStart("ACTION1", this, e); };
+			document.getElementById('touchAction1').ontouchend = function(e) { return touchEnd("ACTION1", this, e); };
+			document.getElementById('touchAction2').ontouchstart = function(e) { return touchStart("ACTION2", this, e); };
+			document.getElementById('touchAction2').ontouchend = function(e) { return touchEnd("ACTION2", this, e); };
+			document.getElementById('touchFullscreen').onclick = function(e) { return touchStart("FULLSCREEN", this, e); };
 			
 			document.getElementById('chatbox').style.top = "30px";
 			document.getElementById('chatbox').style.bottom = "initial";
@@ -412,24 +564,12 @@
 	};
 
 
-
-	Synchronizer.prototype.restartWorld = function() {
-		this.socket.emit('restartWorld', "");
-	};
-
-	Synchronizer.prototype.sendPlayer = function() {
-		if (this.player.world) {
-			var player = this.player.entity;
-			if (player) {
-				this.socket.emit('player', {
-					"worldId": this.player.world.id,
-					"player": player.export()
-				});
-			}
-		}
-	};
+	/*=========*/
+	/* CHATBOX */
+	/*=========*/
 
 	Synchronizer.prototype.chatboxMessage = function(content) {
+		Chatbox.show();
 		var messageObject = content;
 		if (Chatbox) {
 			Chatbox.addMessage(
@@ -457,8 +597,55 @@
 	};
 
 
+	/*======*/
+	/* MISC */
+	/*======*/
+
+	Synchronizer.prototype.restartWorld = function() {
+		this.socket.emit('restartWorld', "");
+	};
+
 	Synchronizer.prototype.audio = function(audioName) {
 		AudioPlayer.play(audioName);
+	};
+
+	Synchronizer.prototype.toggleMenu = function() {
+		if (Interface.current != "menu") {
+			var sync = this;
+			Interface.display("menu", {
+				onquit: function() {
+					sync.disconnect();
+				}
+			});
+			var players = [];
+			var getImagePathDone = 0;
+			for (var id in this.view.players) {
+				var texture = this.view.world.entities[this.view.players[id].entityId].texture;
+				var rotation = this.view.world.entities[this.view.players[id].entityId].rotation;
+				players.push({
+					nickname: this.view.players[id].nickname,
+					image: texture,
+					rotation: rotation
+				});
+			}
+			var updateImagePath = function(player) {
+				if (player.image) {
+					this.view.getImagePath(player.image, function(imagePath) {
+						player.image = imagePath;
+						getImagePathDone++;
+						if (getImagePathDone == players.length) Interface.modify("menu", { players: players });
+					});
+				}
+				else {
+					getImagePathDone++;
+					if (getImagePathDone == players.length) Interface.modify("menu", { players: players });
+				}
+			};
+			for (var id in players) {
+				updateImagePath(players[id]);
+			}
+		}
+		else Interface.display(null);
 	};
 
 

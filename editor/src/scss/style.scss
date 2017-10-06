@@ -1,0 +1,125 @@
+body, html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+#sekai-editor {
+  display: flex;
+}
+
+
+#canvas-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  position: relative;
+  overflow: hidden;
+
+  canvas.grab {
+    cursor: -webkit-grab!important;
+    cursor: grab!important;
+    background-color: white;
+  }
+  canvas.grabbing, canvas.grabbing.grab {
+    cursor: -webkit-grabbing!important;
+    cursor: grabbing!important;
+  }
+
+  .state-buttons-container {
+    position: absolute;
+    top: 23px;
+    left: 23px;
+
+    .btn-floating {
+      margin: 0 0.5em;
+    }
+
+    .shape {
+      [data-action=import] {
+        input[type=file] {
+          display: none;
+        }
+      }
+    }
+
+  }
+
+  #export-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(30, 30, 30, 0.6);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition-duration: .5s;
+    opacity: 1;
+  }
+
+  #export-container.hide {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  #export-container textarea {
+    width: 20em;
+    height: 25em;
+    border-radius: 1em;
+    padding: 1em;
+  }
+
+}
+
+
+
+#menu-container {
+  width: 500px;
+  z-index: 1;
+  position: relative;
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.3);
+}
+
+
+
+
+
+
+
+
+
+@keyframes spin {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes exit {
+  0% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(0.2em, -0.2em);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}

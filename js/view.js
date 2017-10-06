@@ -25,8 +25,8 @@
 	var CAMERA_MIN = 1 / 8;
 	var CAMERA_SPEED = 1 / 20;
 
-	var ZOOM_MIN = 3000;
-	// var ZOOM_MIN = 10000;
+	// var ZOOM_MIN = 3000;
+	var ZOOM_MIN = 50000;
 	var ZOOM_MAX = 200;
 
 	var SPEED_ZOOM_MAX = 1.3;
@@ -50,6 +50,7 @@
 
 	var KEYS = {
 		13: "ENTER",
+		27: "ESCAPE",
 		32: "SPACE",
 		37: "LEFT",
 		38: "UP",
@@ -109,10 +110,11 @@
 	};
 
 	var STYLE_NICKNAME = {
-	    font : '16px Caviar Dreams',
-	    fill : 'rgba(255,255,255,1)',
-	    stroke : 'rgba(5,20,50,1)',
-    	strokeThickness : 5
+    font : '900 16px Josefin Sans, Josefin Sans Backup, sans-serif',
+    fill : 'rgba(255,255,255,0.7)',
+    stroke : 'rgba(10,10,10,0.6)',
+  	strokeThickness : 4,
+  	miterLimit: 3
 	};
 
 
@@ -131,76 +133,76 @@
 		else this.renderer = new PIXI.CanvasRenderer(window.innerWidth * this.resolution, window.innerHeight * this.resolution, {antialias: true});
 		
 		this.renderer.backgroundColor = DEFAULT_BACKGROUND_COLOR;
-	    document.body.appendChild(this.renderer.view);
-	    this.stage = new PIXI.Container();
-	    this.stage.position.x = this.renderer.width / 2;
-	    this.stage.position.y = this.renderer.height / 2;
-	    this.stage.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
-		    this.children.sort(function(a,b) {
-		        a.zIndex = a.zIndex || 0;
-		        b.zIndex = b.zIndex || 0;
-		        return a.zIndex - b.zIndex
-		    });
+    document.body.appendChild(this.renderer.view);
+    this.stage = new PIXI.Container();
+    this.stage.position.x = this.renderer.width / 2;
+    this.stage.position.y = this.renderer.height / 2;
+    this.stage.updateLayersOrder = function () { // https://github.com/pixijs/pixi.js/issues/300
+	    this.children.sort(function(a,b) {
+	        a.zIndex = a.zIndex || 0;
+	        b.zIndex = b.zIndex || 0;
+	        return a.zIndex - b.zIndex
+	    });
 		};
-	    this.PIXIContainer = this.stage;
-	    this.stage.scale.x = 1;
-	    this.stage.scale.y = 1;
+    this.PIXIContainer = this.stage;
+    this.stage.scale.x = 1;
+    this.stage.scale.y = 1;
 
-	    this.graphics = {
-	    	"entities": new PIXI.Graphics(),
-	    	"grid": new PIXI.Graphics(),
+    this.graphics = {
+    	"entities": new PIXI.Graphics(),
+    	"grid": new PIXI.Graphics(),
 
-	    	"clear": function() {
-	    		for (var id in this) {
-	    			if (typeof this[id] != "function") this[id].clear();
-	    		}
-	    	},
-	    	"getAll": function() {
-	    		var res = [];
-				for (var id in this) {
-	    			if (typeof this[id] != "function") res.push(this[id]);
-	    		}
-	    		return res;
-	    	}
-	    };
-	    this.graphics.grid.zIndex = ZINDEX.grid;
-	    this.loadingTextures = {};
-	    this.textures = {};
-	    this.sprites = {};
-	    this.compounds = {};
-	    this.players = {};
-	    this.background = new PIXI.Container();
-	    this.background.zIndex = ZINDEX.background;
-	    this.entityFocusId = null;
-
-
-
-	    // Events
-	    this.initEvents();
+    	"clear": function() {
+    		for (var id in this) {
+    			if (typeof this[id] != "function") this[id].clear();
+    		}
+    	},
+    	"getAll": function() {
+    		var res = [];
+			for (var id in this) {
+    			if (typeof this[id] != "function") res.push(this[id]);
+    		}
+    		return res;
+    	}
+    };
+    this.graphics.grid.zIndex = ZINDEX.grid;
+    this.loadingTextures = {};
+    this.textures = {};
+    this.sprites = {};
+    this.compounds = {};
+    this.players = {};
+    this.background = new PIXI.Container();
+    this.background.zIndex = ZINDEX.background;
+    this.entityFocusId = null;
 
 
-	    // TouchScreen
-	    this.touchScreen = {};
+
+    // Events
+    this.initEvents();
 
 
-	    // Camera offset
-	    this.offset = {
-	    	x: 0,
-	    	y: 0
-	    };
-	    this.cameraSpeedCoeff = 1;
-	    this.cameraTransition = {
-	    	"initialAngle": 0,
-	    	"initialDist": 0,
-	    	"direction": 1,
-	    	"progress": 1,
-	    	"previousOrigin": null
-	    };
-	    this.zoomFactor = 1;
+    // TouchScreen
+    this.touchScreen = {};
 
 
-	    this.tick = 0;
-	    this.run = false;
+    // Camera offset
+    this.offset = {
+    	x: 0,
+    	y: 0
+    };
+    this.cameraSpeedCoeff = 1;
+    this.cameraTransition = {
+    	"initialAngle": 0,
+    	"initialDist": 0,
+    	"direction": 1,
+    	"progress": 1,
+    	"previousOrigin": null
+    };
+    this.zoomFactor = 1;
+
+
+    this.tick = 0;
+    this.run = false;
 	};
 
 	View.prototype.initEvents = function() {
@@ -281,22 +283,22 @@
 
 
 	    this.preventKeyRepeat = {};
-	    window.onkeydown = function(e) {
+	    window.addEventListener('keydown', function(e) {
 	    	if (!view.preventKeyRepeat[e.keyCode] && !Chatbox.focused) {
 	    		view.preventKeyRepeat[e.keyCode] = true;
 	    		var key = KEYS[e.keyCode];
 	    		view.triggerEvent('keydown',key);
 	    	}
-	    };
+	    });
 	    this.addEventListener('keydown', view.keyDown);
 
-	    window.onkeyup = function(e) {
+	    window.addEventListener('keyup', function(e) {
 	    	if (!Chatbox.focused) {
 		    	view.preventKeyRepeat[e.keyCode] = false;
 		    	var key = KEYS[e.keyCode];
 		    	view.triggerEvent('keyup',key);
 		    }
-	    };
+	    });
 
 
 
@@ -343,17 +345,19 @@
 
 		// Rebuild
 		this.cameraTransition = {
-	    	"initialAngle": 0,
-	    	"initialDist": 0,
-	    	"direction": 1,
-	    	"progress": 1,
-	    	"previousOrigin": null
-	    };
+    	"initialAngle": 0,
+    	"initialDist": 0,
+    	"direction": 1,
+    	"progress": 1,
+    	"previousOrigin": null
+    };
+    this.imagesPath = {};
 		var graphics = this.graphics.getAll();
 		for (var idG in graphics) {
 			this.stage.addChild(graphics[idG]);
 		}
 		this.stage.addChild(this.background);
+		this.zoom(1, true);
 		this.world = world;
 		var view = this;
 		this.world.addEventListener("removeEntity", function(entityId) {view.removeSprite(entityId);});
@@ -402,6 +406,7 @@
 			console.warn("[View] Can't start rendering : No world attached.");
 		}
 		else if (!this.run) {
+			this.renderer.view.classList.add('running');
 			this.run = true;
 		}
 	};
@@ -411,6 +416,7 @@
 	 * Stops the rendering
 	 */
 	View.prototype.stopRender = function() {
+		this.renderer.view.classList.remove('running');
 		this.run = false;
 	};
 
@@ -423,6 +429,9 @@
 
 			var time = (new Date().getTime());
 
+			// if (this.entityFocusId) Chatbox.debug(this.world.entities[this.entityFocusId].getVel()['y']);
+			// if (this.entityFocusId) Chatbox.debug(distToSegment(this.world.entities[this.entityFocusId].getPos(), {x: -500, y: 0}, {x: 500, y: 0}));
+
 			this.graphics.clear();
 
 			if (DEBUG) this.drawGrid(this.graphics.grid);
@@ -433,15 +442,6 @@
 					if (this.world.entities[idE].type == "Compound") this.renderCompound(this, this.world.entities[idE]);
 					else this.renderEntity(this, this.world.entities[idE]);
 				}
-				
-
-				// Remove far, non players and not focused entities
-				if (this.tick % 60 == 0) {
-					if (this.distFromEntity(this.world.entities[idE]) > MAX_ENTITY_DISTANCE && !this.world.entities[idE].player) {
-						this.world.removeEntity(idE);
-					}
-				}
-
 			}
 
 			// Update zIndex
@@ -701,7 +701,7 @@
 	/**
 	 * drawGrid()
 	 * Draws a grid
-	 * A little bugy with circular worlds.
+	 * Quite bugy with circular worlds.
 	 */
 	View.prototype.drawGrid = function(graphics) {
 		graphics.lineStyle(1, 0x444444, 1);
@@ -803,17 +803,9 @@
 				"container": container,
 				"zIndex": this.world.entities[id].zIndex
 			});
-			ajax("getImagePath", {
-				"world": this.world.id,
-				"image": texture,
-			}, function (response) {
-				if (response !== "") {
-					view.textures[texture] = PIXI.Texture.fromImage('./img/worlds/' + response + '/textures/' + texture + '.png');
-					initSprite(view.loadingTextures[texture]);
-				}
-				else {
-					console.error("Texture not found : " + texture);
-				}
+			this.getImagePath(texture, function(imagePath) {
+				view.textures[texture] = PIXI.Texture.fromImage(imagePath);
+				initSprite(view.loadingTextures[texture]);
 			});
 		}
 		else {
@@ -830,6 +822,27 @@
 				"container": container,
 				"zIndex": this.world.entities[id].zIndex
 			}]);
+		}
+	};
+
+	View.prototype.getImagePath = function(image, callback) {
+		if (this.imagesPath[image]) {
+			callback(this.imagesPath[image]);
+		}
+		else {
+			var view = this;
+			ajax("getImagePath", {
+				"world": this.world.id,
+				"image": image,
+			}, function (response) {
+				if (response !== "") {
+					view.imagesPath[image] = './img/worlds/' + response + '/textures/' + image + '.png';
+					callback(view.imagesPath[image]);
+				}
+				else {
+					console.error("Texture not found : " + image);
+				}
+			});
 		}
 	};
 
@@ -1000,7 +1013,7 @@
 	};
 
 	View.prototype.getCameraSpeed = function() {
-		return CAMERA_SPEED * this.cameraSpeedCoeff * this.stage.scale.x;
+		return CAMERA_SPEED * this.cameraSpeedCoeff * ((this.stage.scale.x + 1) / 2);
 	};
 
 
@@ -1213,6 +1226,7 @@
 	View.prototype.clearPlayer = function(playerId) {
 		if (this.players[playerId]) {
 			this.stage.removeChild(this.players[playerId].text);
+			this.players[playerId].text = null;
 			delete this.players[playerId];
 		}
 	};
@@ -1235,7 +1249,7 @@
 		for (var idP in this.players) {
 			if (this.world.entities[this.players[idP].entityId]) {
 				if (this.players[idP].text == undefined) {
-					this.players[idP].text = new PIXI.Text(this.players[idP].nickname,STYLE_NICKNAME);
+					this.players[idP].text = new PIXI.Text(this.players[idP].nickname, STYLE_NICKNAME);
 					this.players[idP].text.zIndex = ZINDEX.nickname;
 					this.stage.addChild(this.players[idP].text);
 					this.stage.updateLayersOrder();
@@ -1281,7 +1295,13 @@
 				pos.y -= this.players[idP].text.height;*/
 				this.players[idP].text.x = pos.x;
 				this.players[idP].text.y = pos.y;
-				this.players[idP].text.rotation = angle + Math.PI;
+				if (angle) this.players[idP].text.rotation = angle + Math.PI;
+			}
+			else {
+				if (this.players[idP].text) {
+					this.stage.removeChild(this.players[idP].text);
+					this.players[idP].text = null;
+				}
 			}
 		}
 	};

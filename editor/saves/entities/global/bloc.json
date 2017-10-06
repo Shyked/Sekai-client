@@ -1,0 +1,13 @@
+{
+	"type": "Rectangle",
+	"width": 70,
+	"height": 70,
+	"texture": "bloc",
+	"textureOffset": {
+		"x": 0,
+		"y": 0
+	},
+	"options": {
+		"restitution": 0.5
+	}
+}

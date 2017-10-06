@@ -1,0 +1,43 @@
+{
+	"type": "Compound",
+	"rotation": false,
+	"options": {
+		"treatment": "dynamic",
+		"angle": 0,
+		"restitution": 0.1
+	},
+	"texture": "car_test",
+	"hiddenChildren": true,
+	"children": [
+		{
+			"type": "Circle",
+			"x": -20,
+			"y": 8,
+			"radius": 10
+		},
+		{
+			"type": "Circle",
+			"x": 20,
+			"y": 8,
+			"radius": 10
+		},
+		{
+			"type": "Rectangle",
+			"x": 0,
+			"y": 0,
+			"width": 70,
+			"height": 20
+		},
+		{
+			"type": "Polygon",
+			"x": 0,
+			"y": -16,
+			"vertices": [
+				{"x": -17, "y": -11},
+				{"x": 17, "y": -11},
+				{"x": 22, "y": 0},
+				{"x": -22, "y": 0}
+			]
+		}
+	]
+}

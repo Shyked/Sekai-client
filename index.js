@@ -1,7 +1,7 @@
 var view; // Just for debugging in the console
 var synchronizer;
 var NODE_URL;
-if (document.location.hostname == "shyked.fr") {
+if (/^(?!local)(?!home)(\w*\.)*shyked\.fr/.test(document.location.hostname)) {
 	NODE_URL = "ws://sekai-server.herokuapp.com/"
 }
 else if (document.location.hostname == "") {

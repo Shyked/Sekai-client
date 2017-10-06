@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>Sekai editor</title>
+    <meta charset="utf-8" />
+    <link type="text/css" rel="stylesheet" href="./modules/materializecss/css/materialize.css"  media="screen,projection"/>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../modules/font-awesome/css/font-awesome.min.css">
+  </head>
+  <body>
+
+  <div id="sekai-editor">
+    <!--<div id="export-container" class="hide">
+      <textarea readonly></textarea>
+    </div>-->
+    <div id="canvas-container">
+      <div class="state-buttons-container">
+        <div class="shape">
+          <a data-action="reset" class="btn-floating white waves-effect waves-darker"><i class="grey-text text-darken-4 fa fa-undo"></i></a>
+          <a data-action="import" class="btn-floating white waves-effect waves-darker"><i class="grey-text text-darken-4 fa fa-picture-o"></i><input type="file" /></a>
+          <a data-action="validate" class="btn-floating white waves-effect waves-darker"><i class="grey-text text-darken-4 fa fa-check"></i></a>
+        </div>
+      </div>
+      <div id="state-changer" class="fixed-action-btn horizontal">
+        <a class="btn-floating btn-large white">
+          <i class="grey-text text-darken-4 large fa"></i>
+        </a>
+        <ul>
+          <li><a class="btn-floating white waves-effect waves-darker"><i class="grey-text text-darken-4 fa"></i></a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="menu-container">
+    </div>
+  </div>
+
+  <script type="text/javascript" src="./modules/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="./modules/materializecss/js/materialize.js"></script>
+  <script type="text/javascript" src="../modules/pixi.min.js"></script>
+  <script type="text/javascript" src="./js/script.js"></script>
+  </body>
+</html>
